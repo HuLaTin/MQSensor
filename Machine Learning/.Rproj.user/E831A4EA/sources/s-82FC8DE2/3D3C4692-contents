@@ -1,0 +1,29 @@
+library(reshape2)
+library(ggplot2)
+
+rownames(eventsCaptured) <- seq(length=nrow(eventsCaptured))
+eventsCaptured <- eventsCaptured[,c("Time", "MQ2 ADC","MQ4 ADC", "MQ5 ADC", "MQ6 ADC",  "MQ7 ADC", "MQ8 ADC",  "MQ9 ADC",  "MQ135 ADC",
+                                     "Temp (C*)", "Gas ohms", "Humidity", "Pressure pa")]
+#normalize?
+
+event1 <- as.data.frame(eventsCaptured[1:50,])
+event2 <- as.data.frame(eventsCaptured[51:100,])
+
+event1["num"] <- seq(length=nrow(event1))
+event2["num"] <- seq(length=nrow(event2))
+
+event1 <- melt(event1, id=c("Time","num"))
+event2 <- melt(event2, id=c("Time","num"))
+
+event1["num"] <- seq(length=nrow(event1))
+event2["num"] <- seq(length=nrow(event2))
+
+
+events <- as.data.frame(event1[,4])
+colnames(events) <- c("Event 1")
+events["Event 2"] <- event2[,4]
+#rbind the rest of the events?
+
+events <- t(events)
+
+# write.csv(events, file = "events.csv")
