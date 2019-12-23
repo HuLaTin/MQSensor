@@ -8,10 +8,7 @@ normalize <- function(x)
   return ((x - min(x)) / (max(x) - min(x)))
 }
 #Choose your file
-SensorData <- read.csv(file.choose(), header=TRUE, sep=",")
-
-#Need to change column select sometimes. Why?
-SensorData <- SensorData[,2:22]
+SensorData <- read.csv(file.choose(), header=FALSE, sep=",")
 
 #Sets column names
 colnames(SensorData, do.NULL = FALSE)

@@ -1,0 +1,148 @@
+library(reshape2)
+library(ggplot2)
+
+rownames(eventsCaptured) <- seq(length=nrow(eventsCaptured))
+
+event1 <- as.data.frame(eventsCaptured[1:50,])
+event2 <- as.data.frame(eventsCaptured[51:100,])
+event3 <- as.data.frame(eventsCaptured[101:150,])
+event4 <- as.data.frame(eventsCaptured[151:200,])
+event5 <- as.data.frame(eventsCaptured[201:250,])
+event6 <- as.data.frame(eventsCaptured[251:300,])
+event7 <- as.data.frame(eventsCaptured[301:350,])
+event8 <- as.data.frame(eventsCaptured[351:400,])
+event9 <- as.data.frame(eventsCaptured[401:450,])
+event10 <- as.data.frame(eventsCaptured[451:500,])
+event11 <- as.data.frame(eventsCaptured[501:550,])
+event12 <- as.data.frame(eventsCaptured[551:600,])
+
+
+
+# normalize
+# event1[,3:12] <- as.data.frame(lapply(event1[,3:12], normalize))
+# event2[,3:12] <- as.data.frame(lapply(event2[,3:12], normalize))
+# event3[,3:12] <- as.data.frame(lapply(event3[,3:12], normalize))
+
+#drop temp and humidty
+event1 <- event1[,1:10]
+event2 <- event2[,1:10]
+event3 <- event3[,1:10]
+event4 <- event4[,1:10]
+event5 <- event5[,1:10]
+event6 <- event6[,1:10]
+event7 <- event7[,1:10]
+event8 <- event8[,1:10]
+event9 <- event9[,1:10]
+event10 <- event10[,1:10]
+event11 <- event11[,1:10]
+event12 <- event12[,1:10]
+
+
+
+event1 <- melt(event1, id=c("Time","num"))
+event2 <- melt(event2, id=c("Time","num"))
+event3 <- melt(event3, id=c("Time","num"))
+event4 <- melt(event4, id=c("Time","num"))
+event5 <- melt(event5, id=c("Time","num"))
+event6 <- melt(event6, id=c("Time","num"))
+event7 <- melt(event7, id=c("Time","num"))
+event8 <- melt(event8, id=c("Time","num"))
+event9 <- melt(event9, id=c("Time","num"))
+event10 <- melt(event10, id=c("Time","num"))
+event11 <- melt(event11, id=c("Time","num"))
+event12 <- melt(event12, id=c("Time","num"))
+
+
+
+event1["num"] <- seq(length=nrow(event1))
+event2["num"] <- seq(length=nrow(event2))
+event3["num"] <- seq(length=nrow(event3))
+event4["num"] <- seq(length=nrow(event4))
+event5["num"] <- seq(length=nrow(event5))
+event6["num"] <- seq(length=nrow(event6))
+event7["num"] <- seq(length=nrow(event7))
+event8["num"] <- seq(length=nrow(event8))
+event9["num"] <- seq(length=nrow(event9))
+event10["num"] <- seq(length=nrow(event10))
+event11["num"] <- seq(length=nrow(event11))
+event12["num"] <- seq(length=nrow(event12))
+
+
+# event1 <- as.data.frame(t(event1))
+# event2 <- as.data.frame(t(event2))
+# event3 <- as.data.frame(t(event3))
+
+#events <- t(events)
+
+#events <- events[-c(2:3), ]
+
+
+event1Plot <- ggplot(event1, aes(x=num, y=value))+
+  geom_point(size=.4)
+
+event2Plot <- ggplot(event2, aes(x=num, y=value))+
+  geom_point(size=.4)
+
+event3Plot <- ggplot(event3, aes(x=num, y=value))+
+  geom_point(size=.4)
+
+event4Plot <- ggplot(event4, aes(x=num, y=value))+
+  geom_point(size=.4)
+
+event5Plot <- ggplot(event5, aes(x=num, y=value))+
+  geom_point(size=.4)
+
+event6Plot <- ggplot(event6, aes(x=num, y=value))+
+  geom_point(size=.4)
+
+event7Plot <- ggplot(event7, aes(x=num, y=value))+
+  geom_point(size=.4)
+
+event8Plot <- ggplot(event8, aes(x=num, y=value))+
+  geom_point(size=.4)
+
+event9Plot <- ggplot(event9, aes(x=num, y=value))+
+  geom_point(size=.4)
+
+event10Plot <- ggplot(event10, aes(x=num, y=value))+
+  geom_point(size=.4)
+
+event11Plot <- ggplot(event11, aes(x=num, y=value))+
+  geom_point(size=.4)
+
+event12Plot <- ggplot(event12, aes(x=num, y=value))+
+  geom_point(size=.4)
+
+event1Plot
+event2Plot
+event3Plot
+event4Plot
+event5Plot
+event6Plot
+event7Plot
+event8Plot
+event9Plot
+event10Plot
+event11Plot
+event12Plot
+
+
+# write.csv(events, file = "events.csv")
+
+event1 <- as.data.frame(event1[,-c(1:3)])
+event2 <- as.data.frame(event2[,-c(1:3)])
+event3 <- as.data.frame(event3[,-c(1:3)])
+event4 <- as.data.frame(event4[,-c(1:3)])
+event5 <- as.data.frame(event5[,-c(1:3)])
+event6 <- as.data.frame(event6[,-c(1:3)])
+event7 <- as.data.frame(event7[,-c(1:3)])
+event8 <- as.data.frame(event8[,-c(1:3)])
+event9 <- as.data.frame(event9[,-c(1:3)])
+event10 <- as.data.frame(event10[,-c(1:3)])
+event11 <- as.data.frame(event11[,-c(1:3)])
+event12 <- as.data.frame(event12[,-c(1:3)])
+
+
+
+# eClust <- cbind(event1, event2, event3, event4, event5, event6, event7, event8, event9, event10, event11, event12)
+# colnames(eClust) <- c("Ethanol1", "Acetone2", "Ethanol3", "Acetone4", "Ethanol5", "Acetone6", "Event7", "Ethanol8", "Acetone9", "Ethanol10", "Acetone11", "Ethanol12")
