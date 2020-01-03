@@ -38,6 +38,7 @@ ExpectedChange = .03
 ExpectedChange <- dlgInput("Enter Expected Change", default = ".03", Sys.info()["user"])$res
 ExpectedChange <- as.double(ExpectedChange)
 
+start.time <- Sys.time()
 
 # SensorData <- SensorData[,c("Time", "ADC_N", "Change", "Event","MQ2 ADC", "LPG ppm", "MQ4 ADC", "CH4",
 #                             "MQ5 ADC", "MQ5LPG ppm", "MQ6 ADC", "MQ6 LPG ppm", "MQ7 ADC", "H2 ppm" , "MQ8 ADC",
@@ -142,6 +143,10 @@ for (i in names)
   assign(paste(toString(i), "Times"), TimeIndex)
 
 }
+
+end.time <- Sys.time()
+total.time <- end.time - start.time
+print (total.time)
 
 print("Program Complete!")
 

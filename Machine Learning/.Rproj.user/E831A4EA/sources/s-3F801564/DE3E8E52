@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1577339487090.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "DE3E8E52",
+    "lastKnownWriteTime" : 1576267488,
+    "last_content_update" : 1576267488,
+    "path" : "~/MQSensor/Machine Learning/Clustering.R",
+    "project_path" : "Clustering.R",
+    "properties" : {
+        "cursorPosition" : "31,0",
+        "scrollLine" : "8"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
