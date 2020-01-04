@@ -1,6 +1,5 @@
 #Hunter Tiner
 library(reshape2)
-#library(ggplot2)
 library(svDialogs)
 
 normalize <- function(x)
@@ -30,20 +29,14 @@ if (ncol(SensorData) == 34){
 
 SensorData <- SensorData[!(is.na(SensorData$Time) | SensorData$Time==""), ]
 SensorData[(is.na(SensorData$Time) | SensorData$Time==""), ]
-
 SensorData$Time <- as.POSIXct(SensorData$Time, origin="1970-01-01", tz="GMT")
 
-#Prompt for Expected change to be detected?
+#Prompt for Expected change
 ExpectedChange = .03
 ExpectedChange <- dlgInput("Enter Expected Change", default = ".03", Sys.info()["user"])$res
 ExpectedChange <- as.double(ExpectedChange)
 
 start.time <- Sys.time()
-
-# SensorData <- SensorData[,c("Time", "ADC_N", "Change", "Event","MQ2 ADC", "LPG ppm", "MQ4 ADC", "CH4",
-#                             "MQ5 ADC", "MQ5LPG ppm", "MQ6 ADC", "MQ6 LPG ppm", "MQ7 ADC", "H2 ppm" , "MQ8 ADC",
-#                             "MQ8H2 ppm", "MQ9 ADC", "CO ppm", "MQ135 ADC", "U ppm", "Temp (C*)", "Gas ohms",
-#                             "Humidity", "Pressure pa")]
 
 names <- c("MQ2 ADC","MQ4 ADC", "MQ5 ADC","MQ6 ADC", "MQ7 ADC", "MQ8 ADC", "MQ9 ADC", "MQ135 ADC")
 
@@ -61,7 +54,6 @@ for (i in names)
     SensorData[row,"Change"] = (SensorData[row,"ADC_N"] - SensorData[row-1,"ADC_N"])
   }
 
-
   # determining if event occured
   EventIndex <- data.frame("start" = integer(0), "end" = integer(0))
   TimeIndex <- data.frame("Time" = integer(0))
@@ -75,8 +67,7 @@ for (i in names)
 
     if (SensorData[row,"Change"] > (ExpectedChange)){
       SensorData[row,"Event"] = "True"
-      #print(SensorData[row,"Time"])
-      if (row > 5){
+      if (row > 5 && row < (nrow(SensorData)-44)){
 
         #captures data from 5 points before the event
         #and 44 after
@@ -119,10 +110,9 @@ for (i in names)
     eventStart = (50 * (eventNum - 1)) + 1
     eventStop = (50 * eventNum)
     eventTemp <- as.data.frame(eventsCaptured[eventStart:eventStop,])
-    #Drop Gas Ohms
-    eventTemp <- eventTemp[-c(11)]
-    #Normalize before melt
     #
+    #normalizing sensor readings excluding gas ohms, temp, humidity, pressure
+    eventTemp[,2:9] <- as.data.frame(lapply(eventTemp[,2:9], normalize))
     #eventTemp[,2:ncol(eventTemp)] <- as.data.frame(lapply(eventTemp[,2:ncol(eventTemp)], normalize))
     #
     eventTemp["num"] <- seq(length=nrow(eventTemp))
@@ -130,12 +120,9 @@ for (i in names)
     events <- cbind(events, eventTemp[,4])
     names(events)[c(ncol(events))] <- paste("Event", toString(eventNum), sep=" ")
   }
-
-  #print("The 'events' data frame will be transposed.")
   events <- as.data.frame(t(events))
 
   TimeIndex$Time <- as.POSIXct(TimeIndex$Time, origin="1970-01-01", tz="GMT")
-
 
   assign(paste(toString(i), "Index"), EventIndex)
   assign(paste(toString(i), "Captured"), eventsCaptured)
@@ -146,7 +133,7 @@ for (i in names)
 
 end.time <- Sys.time()
 total.time <- end.time - start.time
-print (total.time)
 
-print("Program Complete!")
+print("Program Completed!")
+print(total.time)
 
