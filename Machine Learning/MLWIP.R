@@ -32,10 +32,10 @@ SensorData[(is.na(SensorData$Time) | SensorData$Time==""), ]
 SensorData$Time <- as.POSIXct(SensorData$Time, origin="1970-01-01", tz="GMT")
 
 #Prompt for Expected change
-ExpectedChange = .03
-ExpectedChange <- dlgInput("Enter Expected Change", default = ".03", Sys.info()["user"])$res
-ExpectedChange <- as.double(ExpectedChange)
+#add error handling?
+ExpectedChange <- as.double(dlgInput("Enter Expected Change", default = ".03", Sys.info()["user"])$res)
 
+#records time to determine elapsed time
 start.time <- Sys.time()
 
 names <- c("MQ2 ADC","MQ4 ADC", "MQ5 ADC","MQ6 ADC", "MQ7 ADC", "MQ8 ADC", "MQ9 ADC", "MQ135 ADC")
@@ -136,4 +136,3 @@ total.time <- end.time - start.time
 
 print("Program Completed!")
 print(total.time)
-
