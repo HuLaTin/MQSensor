@@ -24,7 +24,7 @@ if (ncol(SensorData) == 34){
                             "MQ4 ADC", "CH4", "MQ5 ADC", "MQ5LPG ppm",
                             "MQ6 ADC", "MQ6 LPG ppm", "MQ7 ADC", "H2 ppm" ,
                             "MQ8 ADC", "MQ8H2 ppm", "MQ9 ADC", "CO ppm", "MQ135 ADC",
-                            "U ppm", "Temp (C*)", "Gas ohms", "Humidity", "Pressure pa")
+                            "U ppm", "Temp (C*)", "Gas ohms", "Humidity", "Pressure pa", "CPU Load")
 }
 
 SensorData <- SensorData[!(is.na(SensorData$Time) | SensorData$Time==""), ]
