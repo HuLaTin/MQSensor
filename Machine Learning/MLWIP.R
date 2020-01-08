@@ -9,7 +9,7 @@ normalize <- function(x)
 #Choose your file
 SensorData <- read.csv(file.choose(), header=FALSE, sep=",")
 
-#Sets column names
+#Sets column names.
 colnames(SensorData, do.NULL = FALSE)
 if (ncol(SensorData) == 34){
   colnames(SensorData) <- c("Time", "MQ2 ADC", "LPG ppm",
