@@ -1,5 +1,6 @@
-#sensor array program: MQ2, MQ4, MQ5, MQ6, MQ7, MQ8, MQ9
-#MQ135, BME680, PMS5003
+#sensor array program: MQ2, MQ4, MQ5, MQ6, MQ7, MQ8, MQ9, MQ135, BME680, PMS5003
+
+#to add MQ3 sensor - will remove another less useful sensor.
 
 import time
 import math
@@ -29,11 +30,11 @@ adc6 = MCP3008(channel=6)
 #location of analog signal from MQ135 sensor
 adc7 = MCP3008(channel=7)          
             
-#this first set of code defines R0 in clean air
-#essentially a clean air calibration
+#defines R0 in clean air - "clean air calibration"
 
 #defines inital analog signal before start
 mq2sensorValue=0
+#mq3sensorValue=0
 mq4sensorValue=0
 mq5sensorValue=0
 mq6sensorValue=0
@@ -50,6 +51,7 @@ x=0
 for x in range(0, 500):
     
     mq2sensorValue = mq2sensorValue + adc0.value
+    #mq3sensorValue = mq3sensorValue + adc?.value
     mq4sensorValue = mq4sensorValue + adc1.value
     mq5sensorValue = mq5sensorValue + adc2.value
     mq6sensorValue = mq6sensorValue + adc3.value
@@ -62,6 +64,7 @@ for x in range(0, 500):
 
 #Gets average of analog value
 mq2sensorValue1 = mq2sensorValue/500
+#mq3sensorValue1 = mq2sensorValue/500
 mq4sensorValue1 = mq4sensorValue/500
 mq5sensorValue1 = mq5sensorValue/500
 mq6sensorValue1 = mq6sensorValue/500
@@ -82,6 +85,7 @@ mq135sensorValue1 = mq135sensorValue/500
 
 #calculates the sensing resitance in "clean air"
 mq2RSair = ((3.3*10)/mq2sensorValue1)-10
+#mq3RSair = ((3.3*10)/mq2sensorValue1)-10
 mq4RSair = ((3.3*10)/mq4sensorValue1)-10
 mq5RSair = ((3.3*10)/mq5sensorValue1)-10
 mq6RSair = ((3.3*10)/mq6sensorValue1)-10
@@ -93,6 +97,7 @@ mq135RSair = ((3.3*10)/mq135sensorValue1)-10
 #Calc sensor restistance in clean air from RS using air
 #value at 1000ppm air from datasheet
 mq2R0 = mq2RSair/9.9
+#mq3
 mq4R0 = mq4RSair/4.4
 mq5R0 = mq5RSair/6.5
 mq6R0 = mq6RSair/9.9
@@ -130,6 +135,8 @@ while True:
     #on data sheet y=mx+b === log(y) = mlog(x) + b
         LPGm = -0.47  #mq2
         LPGb = 1.506  #mq2
+
+
         CH4m = -0.37  #mq4
         CH4b = 1.13   #mq4
         MQ5LPGm = -0.39 #mq5
@@ -282,6 +289,7 @@ while True:
     #what is being written to file
         inFile.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'
                      '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' %(when, mq2sensorValue, LPGppm,
+                                                    #mq3sensorValue, 
                                                      mq4sensorValue, CH4ppm, mq5sensorValue,
                                                      MQ5LPGppm, mq6sensorValue,
                                                      MQ6LPGppm, mq7sensorValue, H2ppm,
