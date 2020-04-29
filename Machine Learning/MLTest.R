@@ -1,5 +1,5 @@
 #Hunter Tiner
-#Janitor package may be useful??
+
 library(reshape2)
 library(svDialogs)
 
@@ -7,6 +7,7 @@ normalize <- function(x)
 {
   return ((x - min(x)) / (max(x) - min(x)))
 }
+
 #Choose your file
 print("Choose file of sensor readings. (.csv)")
 SensorData <- read.csv(file.choose(), header=TRUE, sep=",")
@@ -49,19 +50,24 @@ trialTimes$Time <- as.POSIXct(trialTimes$Time, origin="1970-01-01", tz="GMT")
 
 
 #Prompt for Expected change
-#ExpectedChange <- as.double(dlgInput("Enter Expected Change", default = ".03", Sys.info()["user"])$res)
+ExpectedChange <- as.double(dlgInput("Enter Expected Change", default = ".03", Sys.info()["user"])$res)
 
-change <- c(".5", ".25", ".1", ".05", ".025")
-for (j in change)
-{
-  ExpectedChange <- as.double(j)
-  print(paste("Expected change of ", toString(j)))
+#change <- c(".5", ".25", ".1", ".05", ".025")
+
+#for (j in change)
+#{
+
+#j <- ".5"
+
+  #ExpectedChange <- as.double(j)
+  #print(paste("Expected change of ", toString(j)))
   #print(ExpectedChange)
 
   names <- c("MQ2_ADC","MQ4_ADC", "MQ5_ADC","MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC", "MQ135_ADC")
 
   for (i in names)
   {
+    #i <- "MQ2_ADC"
     #names <- paste(toString(i), "ADC", sep = "_")
 
     #normalize
@@ -70,7 +76,7 @@ for (j in change)
     SensorData[1,"Change"] = 0
 
     #calculation of Change
-    print(paste("Calculating change for", toString(i)))
+    print(paste("Calculating change of", toString(ExpectedChange), "for", toString(i)))
     for (row in 2:nrow(SensorData))
     {
       SensorData[row,"Change"] = (SensorData[row,"ADC_N"] - SensorData[row-1,"ADC_N"])
@@ -91,8 +97,7 @@ for (j in change)
         SensorData[row,"Event"] = "True"
         if (row > 5 && row < (nrow(SensorData)-44)){
 
-          #captures data from 5 points before the event
-          #and 44 after
+          #captures data from 5 points before the event and 44 after
           if (row > EventIndex[nrow(EventIndex),2]){
             #
             #
@@ -148,7 +153,32 @@ for (j in change)
     }
     events <- as.data.frame(t(events))
 
+    #unnecessary?
     TimeIndex$Time <- as.POSIXct(TimeIndex$Time, origin="1970-01-01", tz="GMT")
+
+    TimeIndex["Timediff"] <- NA
+    #TimeIndex <- head(TimeIndex,-1)
+
+    for (l in 1:nrow(trialTimes))
+    {
+      for(m in 1:nrow(TimeIndex))
+      {
+        TimeIndex[m, "Timediff"] = difftime(trialTimes[l, "Time"], TimeIndex[m, "Time"], units="mins")
+        #print(abs(TimeIndex[m,"Timediff"]) <= 5)
+
+
+        if (abs(TimeIndex[m,"Timediff"]) <= 5){
+          #print(TimeIndex[m, "Timediff"])
+          #print(rownames(events)[m])
+          #print(trialTimes$Chemical[l])
+
+          rownames(events)[m] <- trialTimes$Chemical[l]
+          break
+
+        }
+      }
+    }
+
 
     assign(paste("Index", toString(i), sep = "_"), EventIndex)
     assign(paste("Captured", toString(i), sep = "_"), eventsCaptured)
@@ -161,7 +191,7 @@ for (j in change)
               #path = "path\\"
     )
   }
-}
+#}
 
 end.time <- Sys.time()
 total.time <- end.time - start.time
