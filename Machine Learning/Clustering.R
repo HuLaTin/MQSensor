@@ -28,8 +28,10 @@ clustnum <- round(clustnum)
 #print number of clusters
 clustnum
 
+
 # K-Means Cluster Analysis
 kclustering <- kmeans(get(eventName), clustnum)
+
 #str(kclustering)
 fviz_cluster(kclustering, data = get(eventName), main = paste(sensorName, "Cluster Plot"))
 
