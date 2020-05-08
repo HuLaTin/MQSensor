@@ -8,31 +8,46 @@ normalize <- function(x)
   return ((x - min(x)) / (max(x) - min(x)))
 }
 
-#window size
+#SensorData
+#trialTimes
+#ExpectedChange
+#windowSize
 
+#Set directory
+#resultsdir = "C:\Users\Hunter Tiner\Documents\MQSensor\Machine Learning\eventsOutput"
+infileCSVone <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "thru20200312Joules.csv")
+infileCSVtwo <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "trialTimes.csv")
+ExpectedChange <- as.double(.03)
+windowSize <- as.integer(50)
+
+#file.exists(infileCSVone)
+#file.exists(infileCSVtwo)
+#exists("ExpectedChange")
+#exists("windowSize")
+
+SensorData <- read.csv(infileCSVone, header = TRUE, sep=",")
+trialTimes <- read.csv(infileCSVtwo, header = TRUE, sep=",")
+
+#############################################################
 #Choose your file
-print("Choose file of sensor readings. (.csv)")
-#hard code file path from bash
-SensorData <- read.csv(file.choose(), header=TRUE, sep=",")
+#print("Choose file of sensor readings. (.csv)")
+#SensorData <- read.csv(file.choose(), header=TRUE, sep=",")
 
-print("Choose file of trial times. (.csv)")
-#hard code file path from bash
-trialTimes <- read.csv(file.choose(), header=TRUE, sep=",", stringsAsFactors = FALSE)
+#print("Choose file of trial times. (.csv)")
+#trialTimes <- read.csv(file.choose(), header=TRUE, sep=",", stringsAsFactors = FALSE)
 
-#Prompt for Expected change
-#Take from commandline in bash "threshold"
-ExpectedChange <- as.double(dlgInput("Enter Expected Change.", default = ".03", Sys.info()["user"])$res)
+#ExpectedChange <- as.double(dlgInput("Enter Expected Change.", default = ".03", Sys.info()["user"])$res)
+#windowSize <- as.integer(dlgInput("Enter desired 'window' size. (Increments of 25)", default = "50", Sys.info()["user"])$res)
 
-windowSize <- as.integer(dlgInput("Enter desired 'window' size. (Increments of 25)", default = "50", Sys.info()["user"])$res)
-if (windowSize %% 25 != 0){
-  while (TRUE){
-    windowSize <- as.integer(dlgInput("Invalid entry. Please enter desired 'window' size. (Increments of 25)", default = "50", Sys.info()["user"])$res)
-    if (windowSize %% 25 == 0){
-      break
-    }
-  }
-}
-
+# if (windowSize %% 25 != 0){
+#   while (TRUE){
+#     windowSize <- as.integer(dlgInput("Invalid entry. Please enter desired 'window' size. (Increments of 25)", default = "50", Sys.info()["user"])$res)
+#     if (windowSize %% 25 == 0){
+#       print("Invalid entry. window size must be in increments of 25")
+#       break    }
+#   }
+# }
+##############################################################
 
 #records time to determine elapsed time
 start.time <- Sys.time()
@@ -71,13 +86,14 @@ names <- c("MQ2_ADC","MQ4_ADC", "MQ5_ADC","MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_
 
 for (i in names)
 {
+  #i <- paste(i, "_ADC", sep = "")
   #normalize
   SensorData["ADC_N"] <- as.data.frame(lapply(SensorData[i], normalize))
   SensorData["Event"] <- NA
   SensorData[1,"Change"] = 0
 
   #calculation of Change
-  print(paste("Calculating with threshold of", toString(ExpectedChange), ",for", toString(i)))
+  print(paste("Calculating with threshold of", toString(ExpectedChange), ", for", toString(i)))
   for (row in 2:nrow(SensorData))
   {
     SensorData[row,"Change"] = (SensorData[row,"ADC_N"] - SensorData[row-1,"ADC_N"])
@@ -134,7 +150,7 @@ for (i in names)
   rownames(eventsCaptured) <- seq(length=nrow(eventsCaptured))
   eventsCaptured <- eventsCaptured[,c("Time", "MQ2_ADC","MQ4_ADC", "MQ5_ADC", "MQ6_ADC",  "MQ7_ADC", "MQ8_ADC",  "MQ9_ADC",  "MQ135_ADC",
                                       "Temp_C*", "Gas_ohms", "Humidity", "Pressure_pa")]
-    eventTemp <- data.frame()
+  eventTemp <- data.frame()
   events <- data.frame(matrix(NA, nrow = 50))
   events <- events[-c(1)]
   numEvents = nrow(eventsCaptured)/windowSize
@@ -154,11 +170,10 @@ for (i in names)
   }
   events <- as.data.frame(t(events))
 
-  #unnecessary?
   TimeIndex$Time <- as.POSIXct(TimeIndex$Time, origin="1970-01-01", tz="GMT")
 
   TimeIndex["Timediff"] <- NA
-  #TimeIndex <- head(TimeIndex,-1)
+  row.names(events) <- paste(TimeIndex$Time, "Event")
 
   for (l in 1:nrow(trialTimes))
   {
