@@ -1,7 +1,9 @@
 #Hunter Tiner
 
 library(reshape2)
-library(svDialogs)
+library(cluster)
+library(factoextra)
+#library(svDialogs)
 
 normalize <- function(x)
 {
@@ -20,13 +22,17 @@ infileCSVtwo <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor"
 ExpectedChange <- as.double(.03)
 windowSize <- as.integer(50)
 
+#Kmeans = TRUE, PAM = FALSE
+kSwitch <- TRUE
+
+
 #file.exists(infileCSVone)
 #file.exists(infileCSVtwo)
 #exists("ExpectedChange")
 #exists("windowSize")
 
 SensorData <- read.csv(infileCSVone, header = TRUE, sep=",")
-trialTimes <- read.csv(infileCSVtwo, header = TRUE, sep=",")
+trialTimes <- read.csv(infileCSVtwo, header = TRUE, sep=",", stringsAsFactors = FALSE)
 
 #############################################################
 #Choose your file
@@ -51,6 +57,7 @@ trialTimes <- read.csv(infileCSVtwo, header = TRUE, sep=",")
 
 #records time to determine elapsed time
 start.time <- Sys.time()
+set.seed(Sys.time())
 
 for (row in 1:nrow(trialTimes))
 {
@@ -82,18 +89,19 @@ SensorData[(is.na(SensorData$Time) | SensorData$Time==""), ]
 SensorData$Time <- as.POSIXct(SensorData$Time, origin="1970-01-01", tz="GMT")
 trialTimes$Time <- as.POSIXct(trialTimes$Time, origin="1970-01-01", tz="GMT")
 
-names <- c("MQ2_ADC","MQ4_ADC", "MQ5_ADC","MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC", "MQ135_ADC")
+#names <- c("MQ2_ADC","MQ4_ADC", "MQ5_ADC","MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC", "MQ135_ADC")
+names <- c("MQ2","MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9", "MQ135")
 
 for (i in names)
 {
-  #i <- paste(i, "_ADC", sep = "")
-  #normalize
+  z <- i
+  i <- eventName <- paste(toString(i), "ADC", sep="_")
   SensorData["ADC_N"] <- as.data.frame(lapply(SensorData[i], normalize))
   SensorData["Event"] <- NA
   SensorData[1,"Change"] = 0
 
   #calculation of Change
-  print(paste("Calculating with threshold of", toString(ExpectedChange), ", for", toString(i)))
+  print(paste(toString(z), ": Calculating with threshold of", toString(ExpectedChange) ))
   for (row in 2:nrow(SensorData))
   {
     SensorData[row,"Change"] = (SensorData[row,"ADC_N"] - SensorData[row-1,"ADC_N"])
@@ -105,7 +113,7 @@ for (i in names)
   subsetCounter = 1
   EventIndex[1,1] = 0
   EventIndex[1,2] = 0
-  print(paste("Finding events for", toString(i)))
+  print(paste("Finding events for", toString(z)))
   for (row in 1:nrow(SensorData)){
     # abs() for detecting negative change
     # if(abs(SensorData[row,"Change"])>(ExpectedChange)){
@@ -158,11 +166,14 @@ for (i in names)
     eventStart = (windowSize * (eventNum - 1)) + 1
     eventStop = (windowSize * eventNum)
     eventTemp <- as.data.frame(eventsCaptured[eventStart:eventStop,])
-    #
-    #normalizing sensor readings excluding gas ohms, temp, humidity, pressure
+    ################################################################################################
     eventTemp[,2:9] <- as.data.frame(lapply(eventTemp[,2:9], normalize))
-    #normalize all columns
+    #eventTemp[,2:9] <- as.data.frame(lapply(eventTemp[,2:9], scale))
+
     #eventTemp[,2:ncol(eventTemp)] <- as.data.frame(lapply(eventTemp[,2:ncol(eventTemp)], normalize))
+    #eventTemp[,2:ncol(eventTemp)] <- as.data.frame(lapply(eventTemp[,2:ncol(eventTemp)], scale))
+
+    ################################################################################################
     eventTemp["num"] <- seq(length=nrow(eventTemp))
     eventTemp <- melt(eventTemp, id=c("Time","num"))
     events <- cbind(events, eventTemp[,4])
@@ -188,16 +199,57 @@ for (i in names)
     }
   }
 
-  assign(paste("Index", toString(i), sep = "_"), EventIndex)
-  assign(paste("Captured", toString(i), sep = "_"), eventsCaptured)
-  #assign(paste("Events", toString(i), sep = "_"), events)
-  assign(paste("Times", toString(i), sep = "_"), TimeIndex)
+  assign(paste("Index", toString(z), sep = "_"), EventIndex)
+  assign(paste("Captured", toString(z), sep = "_"), eventsCaptured)
+  assign(paste("Times", toString(z), sep = "_"), TimeIndex)
 
-  #save CSV of Events,
-  #dir.create() or dir.exists?
-  write.csv(events, paste(toString(Sys.Date()), toString(i), toString(ExpectedChange), "Events.csv", sep="-"),)
-  assign(paste("Events", toString(i), sep = "_"), events)
+  write.csv(events, paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "Events.csv", sep="-"),)
+  assign(paste("Events", toString(z), sep = "_"), events)
 
+  eventDF <- events
+
+  #Scree plot
+  #wss <- (nrow(eventDF)-1)*sum(apply(eventDF,2,var))
+  #for (x in 2:10) wss[x] <- sum(kmeans(eventDF, centers=x)$withinss)
+  # png(paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "ScreePlot.png", sep="-"), width = 600, height = 600)
+  # plot(1:10, wss, type="b", main="Scree Plot", xlab="Number of Clusters", ylab="Within groups sum of squares")
+  # dev.off()
+
+  k <- round(sqrt(nrow(eventDF)))
+  #print(k)
+
+  #km.res <- kmeans(eventDF, k, nstart = 25)
+  ##########################################nstart???
+  if (kSwitch == TRUE){
+    # K-Means Cluster Analysis
+    km.res <- kmeans(eventDF, k)
+    aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
+    eventDF <- data.frame(eventDF, km.res$cluster)
+  } else {
+    # K-means with pam()
+    km.res <- pam(eventDF, k)
+    aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
+    eventDF <- data.frame(eventDF, km.res$cluster)
+  }
+
+  # Ward Hierarchical Clustering
+  distance <- dist(eventDF, method = "euclidean") # distance matrix
+  fit <- hclust(distance, method="ward.D2")
+  groups <- cutree(fit, k)
+
+  #change naming scheme
+  png(paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "Dendrogram.png", sep="-"), width = 1200, height = 600)
+  #png("plot.png", width = 1200, height = 600)
+  plot(fit, main = paste(toString(z), toString(ExpectedChange), toString(windowSize), "Dendrogram","| Clusters:", toString(k), sep=" "))
+
+  #groups <- cutree(fit, k)
+  rect.hclust(fit, k, border="red")
+  dev.off()
+
+  #km.res <- kmeans(eventDF, k, nstart = 25)
+  png(paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "FvizCluster.png", sep="-"), width = 800, height = 800)
+  fviz_cluster(km.res, eventDF, main = paste(z, "Cluster Plot", "| Clusters:", toString(k)))
+  dev.off()
 }
 
 end.time <- Sys.time()
