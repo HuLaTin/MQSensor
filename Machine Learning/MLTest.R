@@ -3,7 +3,6 @@
 library(reshape2)
 library(cluster)
 library(factoextra)
-#library(svDialogs)
 
 normalize <- function(x)
 {
@@ -89,7 +88,6 @@ SensorData[(is.na(SensorData$Time) | SensorData$Time==""), ]
 SensorData$Time <- as.POSIXct(SensorData$Time, origin="1970-01-01", tz="GMT")
 trialTimes$Time <- as.POSIXct(trialTimes$Time, origin="1970-01-01", tz="GMT")
 
-#names <- c("MQ2_ADC","MQ4_ADC", "MQ5_ADC","MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC", "MQ135_ADC")
 names <- c("MQ2","MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9", "MQ135")
 
 for (i in names)
@@ -99,6 +97,10 @@ for (i in names)
   SensorData["ADC_N"] <- as.data.frame(lapply(SensorData[i], normalize))
   SensorData["Event"] <- NA
   SensorData[1,"Change"] = 0
+
+  ##################################################
+  #program for moving averages?
+  ##################################################
 
   #calculation of Change
   print(paste(toString(z), ": Calculating with threshold of", toString(ExpectedChange) ))
@@ -120,16 +122,12 @@ for (i in names)
 
     if (SensorData[row,"Change"] > (ExpectedChange)){
       SensorData[row,"Event"] = "True"
-      #if (row > 5 && row < (nrow(SensorData)-44)){
       if (row > 5 && row < (nrow(SensorData)-(windowSize - 6))){
 
-
-        #captures data from 5 points before the event and 44 after
         if (row > EventIndex[nrow(EventIndex),2]){
           #
           #
           EventIndex[subsetCounter,1] = row - 5
-          #EventIndex[subsetCounter,2] = row + 44
           EventIndex[subsetCounter,2] = row + (windowSize - 6)
           #
           #
@@ -158,8 +156,13 @@ for (i in names)
   rownames(eventsCaptured) <- seq(length=nrow(eventsCaptured))
   eventsCaptured <- eventsCaptured[,c("Time", "MQ2_ADC","MQ4_ADC", "MQ5_ADC", "MQ6_ADC",  "MQ7_ADC", "MQ8_ADC",  "MQ9_ADC",  "MQ135_ADC",
                                       "Temp_C*", "Gas_ohms", "Humidity", "Pressure_pa")]
+  ###############################################################
+  #when trying to normalize or scale ALL columns NAs are created.
+  ##############################################################
+  eventsCaptured <- eventsCaptured[-c(11,13)]
+
   eventTemp <- data.frame()
-  events <- data.frame(matrix(NA, nrow = 50))
+  events <- data.frame(matrix(NA, nrow = windowSize))
   events <- events[-c(1)]
   numEvents = nrow(eventsCaptured)/windowSize
   for (eventNum in 1:numEvents){
@@ -167,11 +170,11 @@ for (i in names)
     eventStop = (windowSize * eventNum)
     eventTemp <- as.data.frame(eventsCaptured[eventStart:eventStop,])
     ################################################################################################
-    eventTemp[,2:9] <- as.data.frame(lapply(eventTemp[,2:9], normalize))
-    #eventTemp[,2:9] <- as.data.frame(lapply(eventTemp[,2:9], scale))
 
+    #eventTemp[,2:9] <- as.data.frame(scale(eventTemp[,2:9]))
+    #eventTemp[,2:9] <- as.data.frame(lapply(eventTemp[,2:9], normalize))
+    eventTemp[,2:ncol(eventTemp)] <- as.data.frame(scale(eventTemp[,2:ncol(eventTemp)]))
     #eventTemp[,2:ncol(eventTemp)] <- as.data.frame(lapply(eventTemp[,2:ncol(eventTemp)], normalize))
-    #eventTemp[,2:ncol(eventTemp)] <- as.data.frame(lapply(eventTemp[,2:ncol(eventTemp)], scale))
 
     ################################################################################################
     eventTemp["num"] <- seq(length=nrow(eventTemp))
@@ -179,6 +182,7 @@ for (i in names)
     events <- cbind(events, eventTemp[,4])
     names(events)[c(ncol(events))] <- paste("Event", toString(eventNum), sep=" ")
   }
+  #which(is.na(events))
   events <- as.data.frame(t(events))
 
   TimeIndex$Time <- as.POSIXct(TimeIndex$Time, origin="1970-01-01", tz="GMT")
@@ -215,6 +219,7 @@ for (i in names)
   # plot(1:10, wss, type="b", main="Scree Plot", xlab="Number of Clusters", ylab="Within groups sum of squares")
   # dev.off()
 
+
   k <- round(sqrt(nrow(eventDF)))
   #print(k)
 
@@ -237,9 +242,7 @@ for (i in names)
   fit <- hclust(distance, method="ward.D2")
   groups <- cutree(fit, k)
 
-  #change naming scheme
   png(paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "Dendrogram.png", sep="-"), width = 1200, height = 600)
-  #png("plot.png", width = 1200, height = 600)
   plot(fit, main = paste(toString(z), toString(ExpectedChange), toString(windowSize), "Dendrogram","| Clusters:", toString(k), sep=" "))
 
   #groups <- cutree(fit, k)
@@ -248,7 +251,7 @@ for (i in names)
 
   #km.res <- kmeans(eventDF, k, nstart = 25)
   png(paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "FvizCluster.png", sep="-"), width = 800, height = 800)
-  fviz_cluster(km.res, eventDF, main = paste(z, "Cluster Plot", "| Clusters:", toString(k)))
+  print(fviz_cluster(km.res, eventDF, main = paste(z, "Cluster Plot", "| Clusters:", toString(k))))
   dev.off()
 }
 
@@ -257,4 +260,4 @@ total.time <- end.time - start.time
 
 print("Program Completed!")
 print(total.time)
-#Hunter Tiner
+
