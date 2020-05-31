@@ -1,53 +1,44 @@
 #Hunter Tiner
+
+# R --slave --args setdir fileOne.csv fileTwo.csv 0.5 100 < demoCommandLineArgs.r
+args <- commandArgs(trailingOnly = FALSE)
+print(args)
+
+
+outDir = args[4]
+ExpectedChange = args[7]
+windowSize = args[8]
+
+ExpectedChange <- as.double(ExpectedChange)
+windowSize <- as.integer(windowSize)
+
+infileCSVone = args[5]
+infileCSVtwo = args[6]
+
+#file.exists(infileCSVone)
+#file.exists(infileCSVtwo)
+
+print(paste("outdir string", outDir))
+print(paste("ExpectedChange is", ExpectedChange))
+print(paste("windowSize is", windowSize))
+
+#stop("Reached end of test.")
+
 library(reshape2)
 library(cluster)
 library(factoextra)
-############################
-#library(collapsibleTree)
-#library(htmlwidgets)
-#library(plotly)
-############################
+
 
 normalize <- function(x)
 {
   return ((x - min(x)) / (max(x) - min(x)))
 }
 
-
-#Set directory
-infileCSVone <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "thru20200312Joules.csv")
-infileCSVtwo <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "trialTimes.csv")
-output <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "eventsOutput")
-ExpectedChange <- as.double(.03)
-windowSize <- as.integer(50)
-#k <- as.integer(5)
-
 #Kmeans = TRUE / PAM = FALSE
 kSwitch <- TRUE
 
 SensorData <- read.csv(infileCSVone, header = TRUE, sep=",")
 trialTimes <- read.csv(infileCSVtwo, header = TRUE, sep=",", stringsAsFactors = FALSE)
-
-#############################################################
-#Choose your file
-#print("Choose file of sensor readings. (.csv)")
-#SensorData <- read.csv(file.choose(), header=TRUE, sep=",")
-
-#print("Choose file of trial times. (.csv)")
-#trialTimes <- read.csv(file.choose(), header=TRUE, sep=",", stringsAsFactors = FALSE)
-
-#ExpectedChange <- as.double(dlgInput("Enter Expected Change.", default = ".03", Sys.info()["user"])$res)
-#windowSize <- as.integer(dlgInput("Enter desired 'window' size. (Increments of 25)", default = "50", Sys.info()["user"])$res)
-
-# if (windowSize %% 25 != 0){
-#   while (TRUE){
-#     windowSize <- as.integer(dlgInput("Invalid entry. Please enter desired 'window' size. (Increments of 25)", default = "50", Sys.info()["user"])$res)
-#     if (windowSize %% 25 == 0){
-#       print("Invalid entry. window size must be in increments of 25")
-#       break    }
-#   }
-# }
-##############################################################
 
 #records time to determine elapsed time
 start.time <- Sys.time()
@@ -92,10 +83,6 @@ for (i in names)
   SensorData["ADC_N"] <- as.data.frame(lapply(SensorData[i], normalize))
   SensorData["Event"] <- NA
   SensorData[1,"Change"] = 0
-
-  ##################################################
-  #program for moving averages?
-  ##################################################
 
   #calculation of Change
   print(paste(toString(z), ": Calculating with threshold of", toString(ExpectedChange) ))
@@ -202,7 +189,11 @@ for (i in names)
   assign(paste("Captured", toString(z), sep = "_"), eventsCaptured)
   assign(paste("Times", toString(z), sep = "_"), TimeIndex)
 
-  write.csv(events, paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "Events.csv", sep="-"),)
+  #write.csv(events, paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "Events.csv", sep="-"),)
+  Filename <- file.path(outDir, paste(toString(z), toString(ExpectedChange), toString(windowSize), sep = "-"))
+  csvFilename <- paste(Filename, "Events.csv", sep = "-")
+  #print(csvFilename)
+  write.csv(events, csvFilename)
   assign(paste("Events", toString(z), sep = "_"), events)
 
   #eventDF <- read.csv(file.choose(), header=TRUE, sep=",")
@@ -240,7 +231,11 @@ for (i in names)
   fit <- hclust(distance, method="ward.D2")
   groups <- cutree(fit, k)
 
-  png(paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "Dendrogram.png", sep="-"), width = 1200, height = 600)
+  dendroFilename <- paste(Filename, "Dendrogram.png", sep = "-")
+  fvizFilename <- paste(Filename, "FvizCluster.png", sep = "-")
+  heatFilename <- paste(Filename, "Heatmap.png", sep = "-")
+
+  png(dendroFilename, width = 1200, height = 600)
   plot(fit, main = paste(toString(z), toString(ExpectedChange), toString(windowSize), "Dendrogram","| Clusters:", toString(k), sep=" "))
 
   #groups <- cutree(fit, k)
@@ -248,13 +243,13 @@ for (i in names)
   dev.off()
 
   #km.res <- kmeans(eventDF, k, nstart = 25)
-  png(paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "FvizCluster.png", sep="-"), width = 800, height = 800)
+  png(fvizFilename, width = 800, height = 800)
   print(fviz_cluster(km.res, eventDF, main = paste(z, "Cluster Plot", "| Clusters:", toString(k))))
   dev.off()
 
   #d3heatmap or heatmaply
   my_palette <- colorRampPalette(c("red", "yellow", "green"))(n = 300)
-  png(paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "HeatMap.png", sep="-"), width = 1600, height = 1200)
+  png(heatFilename, width = 1600, height = 1200)
   print(heatmap(eventHeat[,], main = paste(z, "Heat Map"),col=my_palette))
   #print(heatmap(eventDF[,150:210], main = paste(z, "Heat Map")))
   dev.off()
