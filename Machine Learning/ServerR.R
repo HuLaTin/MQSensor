@@ -37,6 +37,15 @@ normalize <- function(x)
 #Kmeans = TRUE / PAM = FALSE
 kSwitch <- TRUE
 
+###############################################################################################################################
+#For Testing
+infileCSVone <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "thru20200312Joules.csv")
+infileCSVtwo <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "trialTimes.csv")
+ExpectedChange <- as.double(.03)
+windowSize <- as.integer(50)
+###############################################################################################################################
+
+
 SensorData <- read.csv(infileCSVone, header = TRUE, sep=",")
 trialTimes <- read.csv(infileCSVtwo, header = TRUE, sep=",", stringsAsFactors = FALSE)
 
@@ -197,6 +206,8 @@ for (i in names)
   assign(paste("Events", toString(z), sep = "_"), events)
 
   #eventDF <- read.csv(file.choose(), header=TRUE, sep=",")
+  print(events[!complete.cases(events),])
+  print("kmeans")
 
   eventDF <- events
   eventHeat <- as.matrix(eventDF)
