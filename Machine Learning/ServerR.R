@@ -39,10 +39,10 @@ kSwitch <- TRUE
 
 ###############################################################################################################################
 #For Testing
-infileCSVone <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "thru20200312Joules.csv")
-infileCSVtwo <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "trialTimes.csv")
-ExpectedChange <- as.double(.03)
-windowSize <- as.integer(50)
+#infileCSVone <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "thru20200312Joules.csv")
+#infileCSVtwo <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "trialTimes.csv")
+#ExpectedChange <- as.double(.03)
+#windowSize <- as.integer(50)
 ###############################################################################################################################
 
 
@@ -162,9 +162,7 @@ for (i in names)
     eventTemp <- as.data.frame(eventsCaptured[eventStart:eventStop,])
     ################################################################################################
 
-    #eventTemp[,2:9] <- as.data.frame(scale(eventTemp[,2:9]))
-    #eventTemp[,2:9] <- as.data.frame(lapply(eventTemp[,2:9], normalize))
-    eventTemp[,2:ncol(eventTemp)] <- as.data.frame(scale(eventTemp[,2:ncol(eventTemp)]))
+    #eventTemp[,2:ncol(eventTemp)] <- as.data.frame(scale(eventTemp[,2:ncol(eventTemp)]))
     #eventTemp[,2:ncol(eventTemp)] <- as.data.frame(lapply(eventTemp[,2:ncol(eventTemp)], normalize))
 
     ################################################################################################
@@ -179,6 +177,8 @@ for (i in names)
   TimeIndex$Time <- as.POSIXct(TimeIndex$Time, origin="1970-01-01", tz="GMT")
 
   TimeIndex["Timediff"] <- NA
+  events["Ident"] <- 0
+
   row.names(events) <- paste(TimeIndex$Time, "Event")
 
   for (l in 1:nrow(trialTimes))
@@ -189,81 +189,87 @@ for (i in names)
 
       if (abs(TimeIndex[m,"Timediff"]) <= 5){
         rownames(events)[m] <- trialTimes$Chemical[l]
+        events[m, "Ident"] <- 1
         break
       }
     }
   }
 
+  eventsTrim <- subset(events, Ident=='1')
+
+  events <- subset(events, select = -c(Ident))
+  eventsTrim <- subset(eventsTrim, select = -c(Ident))
+
   assign(paste("Index", toString(z), sep = "_"), EventIndex)
   assign(paste("Captured", toString(z), sep = "_"), eventsCaptured)
   assign(paste("Times", toString(z), sep = "_"), TimeIndex)
 
-  #write.csv(events, paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "Events.csv", sep="-"),)
   Filename <- file.path(outDir, paste(toString(z), toString(ExpectedChange), toString(windowSize), sep = "-"))
   csvFilename <- paste(Filename, "Events.csv", sep = "-")
-  #print(csvFilename)
-  write.csv(events, csvFilename)
-  assign(paste("Events", toString(z), sep = "_"), events)
+  csvTrimFilename <- paste(Filename, "EventsTrim.csv", sep = "-")
 
-  #eventDF <- read.csv(file.choose(), header=TRUE, sep=",")
+  write.csv(events, csvFilename)
+  write.csv(eventsTrim, csvTrimFilename)
+  assign(paste("Events", toString(z), sep = "_"), events)
+  assign(paste("EventsTrim", toString(z), sep = "_"), eventsTrim)
+
   print(events[!complete.cases(events),])
   print("kmeans")
 
-  eventDF <- events
-  eventHeat <- as.matrix(eventDF)
+  eventList <- c("events", "eventsTrim")
 
-  #Scree plot
-  #wss <- (nrow(eventDF)-1)*sum(apply(eventDF,2,var))
-  #for (x in 2:10) wss[x] <- sum(kmeans(eventDF, centers=x)$withinss)
-  # png(paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "ScreePlot.png", sep="-"), width = 600, height = 600)
-  # plot(1:10, wss, type="b", main="Scree Plot", xlab="Number of Clusters", ylab="Within groups sum of squares")
-  # dev.off()
+  for (i in eventList)
+  {
+    events <- get(i)
 
+    eventDF <- events
+    eventHeat <- as.matrix(eventDF)
 
-  k <- round(sqrt(nrow(eventDF)))
-  #print(k)
+    k <- round(sqrt(nrow(eventDF)))
+    #print(k)
 
-  #km.res <- kmeans(eventDF, k, nstart = 25)
-  ##########################################nstart???
-  if (kSwitch == TRUE){
-    # K-Means Cluster Analysis
-    km.res <- kmeans(eventDF, k)
-    aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
-    eventDF <- data.frame(eventDF, km.res$cluster)
-  } else {
-    # K-means with pam()
-    km.res <- pam(eventDF, k)
-    aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
-    eventDF <- data.frame(eventDF, km.res$cluster)
+    #km.res <- kmeans(eventDF, k, nstart = 25)
+    ##########################################nstart???
+    if (kSwitch == TRUE){
+      # K-Means Cluster Analysis
+      km.res <- kmeans(eventDF, k)
+      aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
+      eventDF <- data.frame(eventDF, km.res$cluster)
+    } else {
+      # K-means with pam()
+      km.res <- pam(eventDF, k)
+      aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
+      eventDF <- data.frame(eventDF, km.res$cluster)
+    }
+
+    # Ward Hierarchical Clustering
+    distance <- dist(eventDF, method = "euclidean") # distance matrix
+    fit <- hclust(distance, method="ward.D2")
+    groups <- cutree(fit, k)
+
+    dendroFilename <- paste(Filename, toString(i), "Dendrogram.png", sep = "-")
+    fvizFilename <- paste(Filename, toString(i), "FvizCluster.png", sep = "-")
+    heatFilename <- paste(Filename, toString(i), "Heatmap.png", sep = "-")
+
+    png(dendroFilename, width = 1200, height = 600)
+    plot(fit, main = paste(toString(z), toString(ExpectedChange), toString(windowSize), "Dendrogram","| Clusters:", toString(k), sep=" "))
+
+    #groups <- cutree(fit, k)
+    rect.hclust(fit, k, border="red")
+    dev.off()
+
+    #km.res <- kmeans(eventDF, k, nstart = 25)
+    png(fvizFilename, width = 800, height = 800)
+    print(fviz_cluster(km.res, eventDF, main = paste(z, "Cluster Plot", "| Clusters:", toString(k))))
+    dev.off()
+
+    #d3heatmap or heatmaply
+    my_palette <- colorRampPalette(c("red", "yellow", "green"))(n = 300)
+    png(heatFilename, width = 1600, height = 1200)
+    print(heatmap(eventHeat[,], main = paste(z, "Heat Map"),col=my_palette))
+    #print(heatmap(eventDF[,150:210], main = paste(z, "Heat Map")))
+    dev.off()
   }
-
-  # Ward Hierarchical Clustering
-  distance <- dist(eventDF, method = "euclidean") # distance matrix
-  fit <- hclust(distance, method="ward.D2")
-  groups <- cutree(fit, k)
-
-  dendroFilename <- paste(Filename, "Dendrogram.png", sep = "-")
-  fvizFilename <- paste(Filename, "FvizCluster.png", sep = "-")
-  heatFilename <- paste(Filename, "Heatmap.png", sep = "-")
-
-  png(dendroFilename, width = 1200, height = 600)
-  plot(fit, main = paste(toString(z), toString(ExpectedChange), toString(windowSize), "Dendrogram","| Clusters:", toString(k), sep=" "))
-
-  #groups <- cutree(fit, k)
-  rect.hclust(fit, k, border="red")
-  dev.off()
-
-  #km.res <- kmeans(eventDF, k, nstart = 25)
-  png(fvizFilename, width = 800, height = 800)
-  print(fviz_cluster(km.res, eventDF, main = paste(z, "Cluster Plot", "| Clusters:", toString(k))))
-  dev.off()
-
-  #d3heatmap or heatmaply
-  my_palette <- colorRampPalette(c("red", "yellow", "green"))(n = 300)
-  png(heatFilename, width = 1600, height = 1200)
-  print(heatmap(eventHeat[,], main = paste(z, "Heat Map"),col=my_palette))
-  #print(heatmap(eventDF[,150:210], main = paste(z, "Heat Map")))
-  dev.off()
 }
 
 end.time <- Sys.time()
