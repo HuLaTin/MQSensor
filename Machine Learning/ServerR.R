@@ -53,6 +53,11 @@ trialTimes <- read.csv(infileCSVtwo, header = TRUE, sep=",", stringsAsFactors = 
 start.time <- Sys.time()
 set.seed(Sys.time())
 
+#################################
+#!!Needed for current imported data file!!
+SensorData <- SensorData[,-1]
+#################################
+
 for (row in 1:nrow(trialTimes))
 {
   #print(paste(trialTimes[row,"Chemical"], row, sep="-"))
@@ -200,6 +205,10 @@ for (i in names)
   events <- subset(events, select = -c(Ident))
   eventsTrim <- subset(eventsTrim, select = -c(Ident))
 
+  ###################
+  #stop("End of test")
+  ###################
+
   assign(paste("Index", toString(z), sep = "_"), EventIndex)
   assign(paste("Captured", toString(z), sep = "_"), eventsCaptured)
   assign(paste("Times", toString(z), sep = "_"), TimeIndex)
@@ -215,6 +224,8 @@ for (i in names)
 
   print(events[!complete.cases(events),])
   print("kmeans")
+
+  stop("End of test")
 
   eventList <- c("events", "eventsTrim")
 
