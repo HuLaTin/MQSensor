@@ -25,7 +25,7 @@ windowSize <- as.integer(50)
 #Kmeans = TRUE / PAM = FALSE
 kSwitch <- TRUE
 
-SensorData <- read.csv(infileCSVone, header = TRUE, sep=",")
+SensorData <- read.csv(infileCSVone, header = TRUE, sep=",", stringsAsFactors = FALSE)
 trialTimes <- read.csv(infileCSVtwo, header = TRUE, sep=",", stringsAsFactors = FALSE)
 
 #############################################################
@@ -62,6 +62,12 @@ for (row in 1:nrow(trialTimes))
 #Sets column names.
 colnames(SensorData, do.NULL = FALSE)
 
+#kickflip
+print(head(SensorData))
+SensorData <- SensorData[,-1]
+
+
+#all this needs redone
 if (ncol(SensorData) == 34){
   colnames(SensorData) <- c("Time", "MQ2_ADC", "LPG_ppm",
                             "MQ4_ADC", "CH4", "MQ5_ADC", "MQ5LPG_ppm",
@@ -217,9 +223,19 @@ for (i in names)
 
   eventList <- c("events", "eventsTrim")
 
+  ###############
+  #Some Machine learning bits
+  ###############
   for (i in eventList)
   {
     events <- get(i)
+
+    idx_Acetone <- which(sapply(events, function(events) "Acetone" %in% events))
+    idx_Ethanol <- which(sapply(events, function(events) "Ethanol" %in% events))
+    idx_Cyclohexane <- which(sapply(events, function(events) "Cyclohexane" %in% events))
+
+    stop("End of test")
+
 
     eventDF <- events
     eventHeat <- as.matrix(eventDF)
@@ -248,6 +264,39 @@ for (i in names)
       aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
       eventDF <- data.frame(eventDF, km.res$cluster)
     }
+
+    ######################################################################
+    ### need to create a train/test sets for this part!!! ###
+    ### can use a GREP? ###
+
+    ##### Naive Bayes Test ######
+    ##### Need to balance sets ####
+    nbModel <- naiveBayes(Event~., data = eventDF)
+    nbPredict <- predict(nbModel, test[,-1])
+    table(pred=nbPredict,true=eventDF$Event)
+
+    confusionMatrix(nbPredict, eventDF$Event )
+
+
+    ### Decision Tree ###
+    ### also awaiting balanced sets ###
+    ### this S#its gonna be so tight when it works ###
+    library("rpart")
+    library("rpart.plot")
+
+    tree <- rpart(Event~.,
+                  data=eventDF,
+                  method = "class")
+    #tree
+
+    rpart.plot(tree, nn=TRUE)
+
+    treePredict <- predict(object=tree,test[-1],type="class")
+
+    table(treePredict, test$activity)
+    confusionMatrix(treePredict, test$activity)
+
+    ####################################################################
 
     # Ward Hierarchical Clustering
     distance <- dist(eventDF, method = "euclidean") # distance matrix

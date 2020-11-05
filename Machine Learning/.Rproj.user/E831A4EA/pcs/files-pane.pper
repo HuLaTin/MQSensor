@@ -1,9 +1,9 @@
 {
-    "path" : "~/MQSensor/Machine Learning",
-    "sortOrder" : [
+    "path": "~/MQSensor/Machine Learning",
+    "sortOrder": [
         {
-            "ascending" : true,
-            "columnIndex" : 2
+            "columnIndex": 2,
+            "ascending": true
         }
     ]
 }

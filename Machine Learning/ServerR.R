@@ -15,6 +15,8 @@ windowSize <- as.integer(windowSize)
 infileCSVone = args[5]
 infileCSVtwo = args[6]
 
+eventCount = args[9]
+
 #file.exists(infileCSVone)
 #file.exists(infileCSVtwo)
 
@@ -22,11 +24,14 @@ print(paste("outdir string", outDir))
 print(paste("ExpectedChange is", ExpectedChange))
 print(paste("windowSize is", windowSize))
 
+print(paste("Expected event count is", eventCount))
+
+
 #stop("Reached end of test.")
 
-library(reshape2)
-library(cluster)
-library(factoextra)
+suppressPackageStartupMessages(library(reshape2))
+suppressPackageStartupMessages(library(cluster))
+suppressPackageStartupMessages(library(factoextra))
 
 
 normalize <- function(x)
@@ -55,7 +60,8 @@ set.seed(Sys.time())
 
 #################################
 #!!Needed for current imported data file!!
-SensorData <- SensorData[,-1]
+#use row.names = FALSE when writing CSV to save yourself the trouble
+#SensorData <- SensorData[,-1]
 #################################
 
 for (row in 1:nrow(trialTimes))
@@ -65,7 +71,8 @@ for (row in 1:nrow(trialTimes))
 }
 
 #Sets column names.
-colnames(SensorData, do.NULL = FALSE)
+#
+#colnames(SensorData, do.NULL = FALSE)
 
 if (ncol(SensorData) == 34){
   colnames(SensorData) <- c("Time", "MQ2_ADC", "LPG_ppm",
@@ -84,7 +91,8 @@ if (ncol(SensorData) == 34){
 }
 
 SensorData <- SensorData[!(is.na(SensorData$Time) | SensorData$Time==""), ]
-SensorData[(is.na(SensorData$Time) | SensorData$Time==""), ]
+#
+#SensorData[(is.na(SensorData$Time) | SensorData$Time==""), ]
 SensorData$Time <- as.POSIXct(SensorData$Time, origin="1970-01-01", tz="GMT")
 trialTimes$Time <- as.POSIXct(trialTimes$Time, origin="1970-01-01", tz="GMT")
 
@@ -222,10 +230,14 @@ for (i in names)
   assign(paste("Events", toString(z), sep = "_"), events)
   assign(paste("EventsTrim", toString(z), sep = "_"), eventsTrim)
 
-  print(events[!complete.cases(events),])
-  print("kmeans")
+  #Need to double check my math here.
+  #eventCount
+  eventsDetected <- (nrow(events)-1)
+  trueEvents <- (nrow(eventsTrim)-1)
+  eventOutput <- cbind(eventCount, eventsDetected, trueEvents)
 
-  stop("End of test")
+  csvEventsFilename <- paste(Filename, "EventsCount.csv", sep = "-")
+  write.csv(eventOutput, csvEventsFilename, row.names = FALSE)
 
   eventList <- c("events", "eventsTrim")
 
@@ -275,17 +287,18 @@ for (i in names)
     dev.off()
 
     #d3heatmap or heatmaply
+    #This thing broken rn, ill fix it later...
     my_palette <- colorRampPalette(c("red", "yellow", "green"))(n = 300)
-    png(heatFilename, width = 1600, height = 1200)
-    print(heatmap(eventHeat[,], main = paste(z, "Heat Map"),col=my_palette))
+    #png(heatFilename, width = 1600, height = 1200)
+    #print(heatmap(eventHeat[,], main = paste(z, "Heat Map"),col=my_palette))
     #print(heatmap(eventDF[,150:210], main = paste(z, "Heat Map")))
-    dev.off()
+    #dev.off()
   }
 }
 
 end.time <- Sys.time()
 total.time <- end.time - start.time
 
-print("Program Completed!")
+#print("Program Completed!")
 print(total.time)
 
