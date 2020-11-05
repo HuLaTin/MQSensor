@@ -2,6 +2,11 @@
 library(reshape2)
 library(cluster)
 library(factoextra)
+library(dplyr)
+library(rpart)
+library(rpart.plot)
+library(e1071)
+library(caTools)
 ############################
 #library(collapsibleTree)
 #library(htmlwidgets)
@@ -230,12 +235,23 @@ for (i in names)
   {
     events <- get(i)
 
-    idx_Acetone <- which(sapply(events, function(events) "Acetone" %in% events))
-    idx_Ethanol <- which(sapply(events, function(events) "Ethanol" %in% events))
-    idx_Cyclohexane <- which(sapply(events, function(events) "Cyclohexane" %in% events))
+    idx_Acetone <- events[grep("Acetone", rownames(events)), ]
+    idx_Ethanol <- events[grep("Ethanol", rownames(events)), ]
+    idx_Cyclohexane <- events[grep("Cyclohexane", rownames(events)), ]
 
-    stop("End of test")
+    dsNum <- min(nrow(idx_Acetone), nrow(idx_Ethanol), nrow(idx_Cyclohexane))
 
+    dsAce <- sample_n(idx_Acetone, dsNum)
+    dsEth <- sample_n(idx_Ethanol, dsNum)
+    dsCyc <- sample_n(idx_Cyclohexane, dsNum)
+
+    dsAce["pred"] <- as.factor("Acetone")
+    dsEth["pred"] <- as.factor("Ethanol")
+    dsCyc["pred"] <- as.factor("Cyclohexane")
+
+    dsData <- rbind(dsAce, dsEth, dsCyc)
+
+    ### Need to build training and test sets ###
 
     eventDF <- events
     eventHeat <- as.matrix(eventDF)
@@ -275,26 +291,37 @@ for (i in names)
     nbPredict <- predict(nbModel, test[,-1])
     table(pred=nbPredict,true=eventDF$Event)
 
-    confusionMatrix(nbPredict, eventDF$Event )
+    confusionMatrix(nbPredict, eventDF$Event)
 
 
     ### Decision Tree ###
     ### also awaiting balanced sets ###
     ### this S#its gonna be so tight when it works ###
-    library("rpart")
-    library("rpart.plot")
 
-    tree <- rpart(Event~.,
-                  data=eventDF,
+    ##################################################
+    treeTest <- rpart(
+      pred~.,
+      data = dsData,
+      method = "class",
+      minsplit = 5,
+      minbucket = 5,
+      cp = -1
+    )
+
+    rpart.plot(treeTest, nn=TRUE)
+    ##################################################
+
+    tree <- rpart(pred ~ .,
+                  data = dsData,
                   method = "class")
-    #tree
 
     rpart.plot(tree, nn=TRUE)
 
-    treePredict <- predict(object=tree,test[-1],type="class")
+    #probably need to remove column by name instead
+    treePredict <- predict(object=tree,dsData[-501],type="class")
 
-    table(treePredict, test$activity)
-    confusionMatrix(treePredict, test$activity)
+    table(treePredict, dsData$pred)
+    confusionMatrix(treePredict, dsData$pred)
 
     ####################################################################
 
