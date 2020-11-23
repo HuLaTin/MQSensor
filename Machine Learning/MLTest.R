@@ -50,7 +50,6 @@ SensorData <- SensorData[ -c(14, 15) ]
 
 
 SensorData <- SensorData[!(is.na(SensorData$Time) | SensorData$Time==""), ]
-SensorData[(is.na(SensorData$Time) | SensorData$Time==""), ]
 SensorData$Time <- as.POSIXct(SensorData$Time, origin="1970-01-01", tz="GMT")
 trialTimes$Time <- as.POSIXct(trialTimes$Time, origin="1970-01-01", tz="GMT")
 
@@ -63,10 +62,6 @@ for (i in names)
   SensorData["ADC_N"] <- as.data.frame(lapply(SensorData[i], normalize))
   SensorData["Event"] <- NA
   SensorData[1,"Change"] = 0
-
-  ##################################################
-  #program for moving averages?
-  ##################################################
 
   #calculation of Change
   print(paste(toString(z), ": Calculating with threshold of", toString(ExpectedChange) ))

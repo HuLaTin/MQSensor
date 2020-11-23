@@ -42,27 +42,10 @@ normalize <- function(x)
 #Kmeans = TRUE / PAM = FALSE
 kSwitch <- TRUE
 
-###############################################################################################################################
-#For Testing
-#infileCSVone <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "thru20200312Joules.csv")
-#infileCSVtwo <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "trialTimes.csv")
-#ExpectedChange <- as.double(.03)
-#windowSize <- as.integer(50)
-###############################################################################################################################
-
-
 SensorData <- read.csv(infileCSVone, header = TRUE, sep=",")
 trialTimes <- read.csv(infileCSVtwo, header = TRUE, sep=",", stringsAsFactors = FALSE)
 
-#records time to determine elapsed time
-start.time <- Sys.time()
 set.seed(Sys.time())
-
-#################################
-#!!Needed for current imported data file!!
-#use row.names = FALSE when writing CSV to save yourself the trouble
-#SensorData <- SensorData[,-1]
-#################################
 
 for (row in 1:nrow(trialTimes))
 {
@@ -71,28 +54,15 @@ for (row in 1:nrow(trialTimes))
 }
 
 #Sets column names.
-#
-#colnames(SensorData, do.NULL = FALSE)
+colnames(SensorData) <- c("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
+                          "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC",
+                          "Temp_C*", "Gas_ohms", "Humidity",
+                          "Pressure_pa", "CPU_Load", "Throttled")
 
-if (ncol(SensorData) == 34){
-  colnames(SensorData) <- c("Time", "MQ2_ADC", "LPG_ppm",
-                            "MQ4_ADC", "CH4", "MQ5_ADC", "MQ5LPG_ppm",
-                            "MQ6_ADC", "MQ6_LPG ppm", "MQ7_ADC", "H2_ppm" ,
-                            "MQ8_ADC", "MQ8H2_ppm", "MQ9_ADC", "CO_ppm", "MQ135_ADC",
-                            "U_ppm", "Temp_C*", "Gas_ohms", "Humidity", "Pressure_pa",
-                            "CPU_Load", "PM1.0_CF.1", "PM2.5_CF.1", "PM10_CF.1", "PM1.0_STD",
-                            "PM2.5_STD", "PM10_STD", "x.0.3um", "x.0.5um", "x.1.0um", "x.2.5um", "x.5.um", "x.10.um")
-} else {
-  colnames(SensorData) <- c("Time", "MQ2_ADC", "LPG_ppm",
-                            "MQ4_ADC", "CH4", "MQ5_ADC", "MQ5LPG_ppm",
-                            "MQ6_ADC", "MQ6_LPG_ppm", "MQ7_ADC", "H2_ppm" ,
-                            "MQ8_ADC", "MQ8H2_ppm", "MQ9_ADC", "CO_ppm", "MQ135_ADC",
-                            "U_ppm", "Temp_C*", "Gas_ohms", "Humidity", "Pressure_pa", "CPU_Load")
-}
+SensorData <- SensorData[ -c(14, 15) ]
+
 
 SensorData <- SensorData[!(is.na(SensorData$Time) | SensorData$Time==""), ]
-#
-#SensorData[(is.na(SensorData$Time) | SensorData$Time==""), ]
 SensorData$Time <- as.POSIXct(SensorData$Time, origin="1970-01-01", tz="GMT")
 trialTimes$Time <- as.POSIXct(trialTimes$Time, origin="1970-01-01", tz="GMT")
 
@@ -146,11 +116,11 @@ for (i in names)
     }
   }
   eventNumber = 2
-  eventsCaptured = SensorData[EventIndex[1,1]:EventIndex[1,2],1:24]
+  eventsCaptured = SensorData[EventIndex[1,1]:EventIndex[1,2],1:13]
   while(1){
     eventStart = EventIndex[eventNumber, 1]
     eventEnd = EventIndex[eventNumber, 2]
-    eventsCaptured <- rbind(eventsCaptured, SensorData[eventStart:eventEnd,1:24])
+    eventsCaptured <- rbind(eventsCaptured, SensorData[eventStart:eventEnd,1:13])
 
     if (eventNumber == nrow(EventIndex))
       break
@@ -158,12 +128,6 @@ for (i in names)
 
   }
   rownames(eventsCaptured) <- seq(length=nrow(eventsCaptured))
-  eventsCaptured <- eventsCaptured[,c("Time", "MQ2_ADC","MQ4_ADC", "MQ5_ADC", "MQ6_ADC",  "MQ7_ADC", "MQ8_ADC",  "MQ9_ADC",  "MQ135_ADC",
-                                      "Temp_C*", "Gas_ohms", "Humidity", "Pressure_pa")]
-  ###############################################################
-  #when trying to normalize or scale ALL columns NAs are created.
-  ##############################################################
-  eventsCaptured <- eventsCaptured[-c(11,13)]
 
   eventTemp <- data.frame()
   events <- data.frame(matrix(NA, nrow = windowSize))
@@ -213,10 +177,6 @@ for (i in names)
   events <- subset(events, select = -c(Ident))
   eventsTrim <- subset(eventsTrim, select = -c(Ident))
 
-  ###################
-  #stop("End of test")
-  ###################
-
   assign(paste("Index", toString(z), sep = "_"), EventIndex)
   assign(paste("Captured", toString(z), sep = "_"), eventsCaptured)
   assign(paste("Times", toString(z), sep = "_"), TimeIndex)
@@ -230,8 +190,6 @@ for (i in names)
   assign(paste("Events", toString(z), sep = "_"), events)
   assign(paste("EventsTrim", toString(z), sep = "_"), eventsTrim)
 
-  #Need to double check my math here.
-  #eventCount
   eventsDetected <- (nrow(events)-1)
   trueEvents <- (nrow(eventsTrim)-1)
   eventOutput <- cbind(eventCount, eventsDetected, trueEvents)
@@ -295,10 +253,3 @@ for (i in names)
     #dev.off()
   }
 }
-
-end.time <- Sys.time()
-total.time <- end.time - start.time
-
-#print("Program Completed!")
-print(total.time)
-
