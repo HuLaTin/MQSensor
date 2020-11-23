@@ -1,4 +1,5 @@
 #Hunter Tiner
+
 library(reshape2)
 library(cluster)
 library(factoextra)
@@ -7,11 +8,7 @@ library(rpart)
 library(rpart.plot)
 library(e1071)
 library(caTools)
-############################
-#library(collapsibleTree)
-#library(htmlwidgets)
-#library(plotly)
-############################
+library(caret)
 
 normalize <- function(x)
 {
@@ -20,8 +17,8 @@ normalize <- function(x)
 
 
 #Set directory
-infileCSVone <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "thru20200714Joules.csv")
-infileCSVtwo <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "trialTimes.csv")
+infileCSVone <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "Data", "Joulesv2_20201122_SL.csv")
+infileCSVtwo <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "Data", "V2TrialTimes.csv")
 output <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "eventsOutput")
 ExpectedChange <- as.double(.03)
 windowSize <- as.integer(50)
@@ -33,29 +30,6 @@ kSwitch <- TRUE
 SensorData <- read.csv(infileCSVone, header = TRUE, sep=",", stringsAsFactors = FALSE)
 trialTimes <- read.csv(infileCSVtwo, header = TRUE, sep=",", stringsAsFactors = FALSE)
 
-#############################################################
-#Choose your file
-#print("Choose file of sensor readings. (.csv)")
-#SensorData <- read.csv(file.choose(), header=TRUE, sep=",")
-
-#print("Choose file of trial times. (.csv)")
-#trialTimes <- read.csv(file.choose(), header=TRUE, sep=",", stringsAsFactors = FALSE)
-
-#ExpectedChange <- as.double(dlgInput("Enter Expected Change.", default = ".03", Sys.info()["user"])$res)
-#windowSize <- as.integer(dlgInput("Enter desired 'window' size. (Increments of 25)", default = "50", Sys.info()["user"])$res)
-
-# if (windowSize %% 25 != 0){
-#   while (TRUE){
-#     windowSize <- as.integer(dlgInput("Invalid entry. Please enter desired 'window' size. (Increments of 25)", default = "50", Sys.info()["user"])$res)
-#     if (windowSize %% 25 == 0){
-#       print("Invalid entry. window size must be in increments of 25")
-#       break    }
-#   }
-# }
-##############################################################
-
-#records time to determine elapsed time
-start.time <- Sys.time()
 set.seed(Sys.time())
 
 for (row in 1:nrow(trialTimes))
@@ -64,37 +38,23 @@ for (row in 1:nrow(trialTimes))
   trialTimes[row, "Chemical"] <- paste(trialTimes[row,"Chemical"], row, sep="-")
 }
 
-#Sets column names.
-colnames(SensorData, do.NULL = FALSE)
-
-#kickflip
 print(head(SensorData))
-SensorData <- SensorData[,-1]
 
+#Sets column names.
+colnames(SensorData) <- c("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
+                          "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC",
+                          "Temp_C*", "Gas_ohms", "Humidity",
+                          "Pressure_pa", "CPU_Load", "Throttled")
 
-#all this needs redone
-if (ncol(SensorData) == 34){
-  colnames(SensorData) <- c("Time", "MQ2_ADC", "LPG_ppm",
-                            "MQ4_ADC", "CH4", "MQ5_ADC", "MQ5LPG_ppm",
-                            "MQ6_ADC", "MQ6_LPG ppm", "MQ7_ADC", "H2_ppm" ,
-                            "MQ8_ADC", "MQ8H2_ppm", "MQ9_ADC", "CO_ppm", "MQ135_ADC",
-                            "U_ppm", "Temp_C*", "Gas_ohms", "Humidity", "Pressure_pa",
-                            "CPU_Load", "PM1.0_CF.1", "PM2.5_CF.1", "PM10_CF.1", "PM1.0_STD",
-                            "PM2.5_STD", "PM10_STD", "x.0.3um", "x.0.5um", "x.1.0um", "x.2.5um", "x.5.um", "x.10.um")
-} else {
-  colnames(SensorData) <- c("Time", "MQ2_ADC", "LPG_ppm",
-                            "MQ4_ADC", "CH4", "MQ5_ADC", "MQ5LPG_ppm",
-                            "MQ6_ADC", "MQ6_LPG_ppm", "MQ7_ADC", "H2_ppm" ,
-                            "MQ8_ADC", "MQ8H2_ppm", "MQ9_ADC", "CO_ppm", "MQ135_ADC",
-                            "U_ppm", "Temp_C*", "Gas_ohms", "Humidity", "Pressure_pa", "CPU_Load")
-}
+SensorData <- SensorData[ -c(14, 15) ]
+
 
 SensorData <- SensorData[!(is.na(SensorData$Time) | SensorData$Time==""), ]
 SensorData[(is.na(SensorData$Time) | SensorData$Time==""), ]
 SensorData$Time <- as.POSIXct(SensorData$Time, origin="1970-01-01", tz="GMT")
 trialTimes$Time <- as.POSIXct(trialTimes$Time, origin="1970-01-01", tz="GMT")
 
-names <- c("MQ2","MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9", "MQ135")
+names <- c("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
 
 for (i in names)
 {
@@ -148,11 +108,11 @@ for (i in names)
     }
   }
   eventNumber = 2
-  eventsCaptured = SensorData[EventIndex[1,1]:EventIndex[1,2],1:24]
+  eventsCaptured = SensorData[EventIndex[1,1]:EventIndex[1,2],1:13]
   while(1){
     eventStart = EventIndex[eventNumber, 1]
     eventEnd = EventIndex[eventNumber, 2]
-    eventsCaptured <- rbind(eventsCaptured, SensorData[eventStart:eventEnd,1:24])
+    eventsCaptured <- rbind(eventsCaptured, SensorData[eventStart:eventEnd,1:13])
 
     if (eventNumber == nrow(EventIndex))
       break
@@ -160,12 +120,13 @@ for (i in names)
 
   }
   rownames(eventsCaptured) <- seq(length=nrow(eventsCaptured))
-  eventsCaptured <- eventsCaptured[,c("Time", "MQ2_ADC","MQ4_ADC", "MQ5_ADC", "MQ6_ADC",  "MQ7_ADC", "MQ8_ADC",  "MQ9_ADC",  "MQ135_ADC",
-                                      "Temp_C*", "Gas_ohms", "Humidity", "Pressure_pa")]
+
   ###############################################################
   #when trying to normalize or scale ALL columns NAs are created.
   ##############################################################
-  eventsCaptured <- eventsCaptured[-c(11,13)]
+
+  #This removes ohms and pressure
+  #eventsCaptured <- eventsCaptured[-c(11,13)]
 
   eventTemp <- data.frame()
   events <- data.frame(matrix(NA, nrow = windowSize))
@@ -220,10 +181,13 @@ for (i in names)
   assign(paste("Captured", toString(z), sep = "_"), eventsCaptured)
   assign(paste("Times", toString(z), sep = "_"), TimeIndex)
 
-  write.csv(events, paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "Events.csv", sep="-"),)
+
+  Events <- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "Events.csv", sep="-")
+  write.csv(events, paste(output, Events, sep = "/"),)
   assign(paste("Events", toString(z), sep = "_"), events)
 
-  write.csv(eventsTrim, paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "EventsTrim.csv", sep="-"),)
+  EventsTrim <- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "EventsTrim.csv", sep="-")
+  write.csv(eventsTrim, paste(output, EventsTrim, sep = "/"),)
   assign(paste("EventsTrim", toString(z), sep = "_"), eventsTrim)
 
   eventList <- c("events", "eventsTrim")
@@ -237,49 +201,34 @@ for (i in names)
 
     idx_Acetone <- events[grep("Acetone", rownames(events)), ]
     idx_Ethanol <- events[grep("Ethanol", rownames(events)), ]
-    idx_Cyclohexane <- events[grep("Cyclohexane", rownames(events)), ]
+    #idx_Cyclohexane <- events[grep("Cyclohexane", rownames(events)), ]
 
-    dsNum <- min(nrow(idx_Acetone), nrow(idx_Ethanol), nrow(idx_Cyclohexane))
+    #dsNum <- min(nrow(idx_Acetone), nrow(idx_Ethanol), nrow(idx_Cyclohexane))
+    dsNum <- min(nrow(idx_Acetone), nrow(idx_Ethanol))
+
 
     dsAce <- sample_n(idx_Acetone, dsNum)
     dsEth <- sample_n(idx_Ethanol, dsNum)
-    dsCyc <- sample_n(idx_Cyclohexane, dsNum)
+    #dsCyc <- sample_n(idx_Cyclohexane, dsNum)
 
     dsAce["pred"] <- as.factor("Acetone")
     dsEth["pred"] <- as.factor("Ethanol")
-    dsCyc["pred"] <- as.factor("Cyclohexane")
+    #dsCyc["pred"] <- as.factor("Cyclohexane")
 
-    dsData <- rbind(dsAce, dsEth, dsCyc)
+    #dsData <- rbind(dsAce, dsEth, dsCyc)
+    dsData <- rbind(dsAce, dsEth)
+
+
+    #do we need to randomize the rows here?
+    #just in case...
+
+    rows <- sample(nrow(dsData))
+    dsData <- dsData[rows, ]
+
+    dsData <- dsData[c(501,1:500)]
 
     ### Need to build training and test sets ###
 
-    eventDF <- events
-    eventHeat <- as.matrix(eventDF)
-
-    #Scree plot
-    #wss <- (nrow(eventDF)-1)*sum(apply(eventDF,2,var))
-    #for (x in 2:10) wss[x] <- sum(kmeans(eventDF, centers=x)$withinss)
-    # png(paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "ScreePlot.png", sep="-"), width = 600, height = 600)
-    # plot(1:10, wss, type="b", main="Scree Plot", xlab="Number of Clusters", ylab="Within groups sum of squares")
-    # dev.off()
-
-
-    k <- round(sqrt(nrow(eventDF)))
-    #print(k)
-
-    #km.res <- kmeans(eventDF, k, nstart = 25)
-    ##########################################nstart???
-    if (kSwitch == TRUE){
-      # K-Means Cluster Analysis
-      km.res <- kmeans(eventDF, k)
-      aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
-      eventDF <- data.frame(eventDF, km.res$cluster)
-    } else {
-      # K-means with pam()
-      km.res <- pam(eventDF, k)
-      aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
-      eventDF <- data.frame(eventDF, km.res$cluster)
-    }
 
     ######################################################################
     ### need to create a train/test sets for this part!!! ###
@@ -287,7 +236,7 @@ for (i in names)
 
     ##### Naive Bayes Test ######
     ##### Need to balance sets ####
-    nbModel <- naiveBayes(Event~., data = eventDF)
+    nbModel <- naiveBayes(pred ~., data = dsData)
     nbPredict <- predict(nbModel, test[,-1])
     table(pred=nbPredict,true=eventDF$Event)
 
@@ -318,12 +267,35 @@ for (i in names)
     rpart.plot(tree, nn=TRUE)
 
     #probably need to remove column by name instead
-    treePredict <- predict(object=tree,dsData[-501],type="class")
+    treePredict <- predict(object=tree,dsData[-1],type="class")
 
     table(treePredict, dsData$pred)
+
     confusionMatrix(treePredict, dsData$pred)
 
     ####################################################################
+
+    eventDF <- events
+    eventHeat <- as.matrix(eventDF)
+
+    k <- round(sqrt(nrow(eventDF)))
+    #print(k)
+
+    #km.res <- kmeans(eventDF, k, nstart = 25)
+    ##########################################nstart???
+    if (kSwitch == TRUE){
+      # K-Means Cluster Analysis
+      km.res <- kmeans(eventDF, k)
+      aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
+      eventDF <- data.frame(eventDF, km.res$cluster)
+    } else {
+      # K-means with pam()
+      km.res <- pam(eventDF, k)
+      aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
+      eventDF <- data.frame(eventDF, km.res$cluster)
+    }
+
+    #####################################################################
 
     # Ward Hierarchical Clustering
     distance <- dist(eventDF, method = "euclidean") # distance matrix
@@ -350,10 +322,3 @@ for (i in names)
     dev.off()
   }
 }
-
-end.time <- Sys.time()
-total.time <- end.time - start.time
-
-print("Program Completed!")
-print(total.time)
-
