@@ -32,13 +32,16 @@ trialTimes <- read.csv(infileCSVtwo, header = TRUE, sep=",", stringsAsFactors = 
 
 set.seed(Sys.time())
 
+chems <- unique(trialTimes[,"Chemical"])
+
+#this numbers the Chemicals events
 for (row in 1:nrow(trialTimes))
 {
   #print(paste(trialTimes[row,"Chemical"], row, sep="-"))
   trialTimes[row, "Chemical"] <- paste(trialTimes[row,"Chemical"], row, sep="-")
 }
 
-print(head(SensorData))
+#print(head(SensorData))
 
 #Sets column names.
 colnames(SensorData) <- c("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
@@ -118,10 +121,10 @@ for (i in names)
 
   ###############################################################
   #when trying to normalize or scale ALL columns NAs are created.
-  ##############################################################
 
   #This removes ohms and pressure
   #eventsCaptured <- eventsCaptured[-c(11,13)]
+  ##############################################################
 
   eventTemp <- data.frame()
   events <- data.frame(matrix(NA, nrow = windowSize))
@@ -190,85 +193,73 @@ for (i in names)
   ###############
   #Some Machine learning bits
   ###############
+
   for (i in eventList)
   {
     events <- get(i)
 
-    idx_Acetone <- events[grep("Acetone", rownames(events)), ]
-    idx_Ethanol <- events[grep("Ethanol", rownames(events)), ]
-    #idx_Cyclohexane <- events[grep("Cyclohexane", rownames(events)), ]
+    if (i == "eventsTrim") {
 
-    #dsNum <- min(nrow(idx_Acetone), nrow(idx_Ethanol), nrow(idx_Cyclohexane))
-    dsNum <- min(nrow(idx_Acetone), nrow(idx_Ethanol))
+      desired_length <- length(chems)
+      list <- vector(mode = "list", length = desired_length)
+
+      for (y in chems){
+        list[[y]] <- nrow(events[grep(y, rownames(events)), ])
+        #dat <- nrow(events[grep(y, rownames(events)), ])
+      }
+
+      dsNum <- min(unlist(list))
+
+      if (dsNum <= 1){
+        next
+      }
+
+      dsData <- data.frame()
+      for (y in chems) {
+        print(y)
+
+        idx_chem <- events[grep(y, rownames(events)), ]
+        idx_chem["pred"] <- as.factor(y)
+        data <- sample_n(idx_chem, dsNum)
+
+        dsData <- rbind(dsData, data)
+      }
+
+      dsData <- dsData[,c(ncol(dsData),1:(ncol(dsData)-1))]
+
+      ### Need to build training and test sets ###
+      sample = sample.split(dsData$pred, SplitRatio = .7)
+      train = subset(data, sample == TRUE)
+      test  = subset(data, sample == FALSE)
+
+      ##### Naive Bayes Test ######
+      ##### Need to balance sets ####
+      # nbModel <- naiveBayes(pred ~., data = dsData)
+      # nbPredict <- predict(nbModel, test[,-1])
+      # table(pred=nbPredict,true=eventDF$Event)
+      #
+      # confusionMatrix(nbPredict, eventDF$Event)
 
 
-    dsAce <- sample_n(idx_Acetone, dsNum)
-    dsEth <- sample_n(idx_Ethanol, dsNum)
-    #dsCyc <- sample_n(idx_Cyclohexane, dsNum)
-
-    dsAce["pred"] <- as.factor("Acetone")
-    dsEth["pred"] <- as.factor("Ethanol")
-    #dsCyc["pred"] <- as.factor("Cyclohexane")
-
-    #dsData <- rbind(dsAce, dsEth, dsCyc)
-    dsData <- rbind(dsAce, dsEth)
+      ### Decision Tree ###
+      ### also awaiting balanced sets ###
+      ### this S#its gonna be so tight when it works ###
 
 
-    #do we need to randomize the rows here?
-    #just in case...
+      # tree <- rpart(pred ~ .,
+      #               data = dsData,
+      #               method = "class")
+      #
+      # rpart.plot(tree, nn=TRUE)
+      #
+      # #probably need to remove column by name instead
+      # treePredict <- predict(object=tree,dsData[-1],type="class")
+      #
+      # table(treePredict, dsData$pred)
+      #
+      # confusionMatrix(treePredict, dsData$pred)
 
-    rows <- sample(nrow(dsData))
-    dsData <- dsData[rows, ]
-
-    dsData <- dsData[c(501,1:500)]
-
-    ### Need to build training and test sets ###
-
-
-    ######################################################################
-    ### need to create a train/test sets for this part!!! ###
-    ### can use a GREP? ###
-
-    ##### Naive Bayes Test ######
-    ##### Need to balance sets ####
-    nbModel <- naiveBayes(pred ~., data = dsData)
-    nbPredict <- predict(nbModel, test[,-1])
-    table(pred=nbPredict,true=eventDF$Event)
-
-    confusionMatrix(nbPredict, eventDF$Event)
-
-
-    ### Decision Tree ###
-    ### also awaiting balanced sets ###
-    ### this S#its gonna be so tight when it works ###
-
-    ##################################################
-    treeTest <- rpart(
-      pred~.,
-      data = dsData,
-      method = "class",
-      minsplit = 5,
-      minbucket = 5,
-      cp = -1
-    )
-
-    rpart.plot(treeTest, nn=TRUE)
-    ##################################################
-
-    tree <- rpart(pred ~ .,
-                  data = dsData,
-                  method = "class")
-
-    rpart.plot(tree, nn=TRUE)
-
-    #probably need to remove column by name instead
-    treePredict <- predict(object=tree,dsData[-1],type="class")
-
-    table(treePredict, dsData$pred)
-
-    confusionMatrix(treePredict, dsData$pred)
-
-    ####################################################################
+    }
 
     eventDF <- events
     eventHeat <- as.matrix(eventDF)
@@ -297,7 +288,11 @@ for (i in names)
     fit <- hclust(distance, method="ward.D2")
     groups <- cutree(fit, k)
 
-    png(paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), toString(i), "Dendrogram.png", sep="-"), width = 1200, height = 600)
+    # Events <- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "Events.csv", sep="-")
+    # write.csv(events, paste(output, Events, sep = "/"),)
+
+    dendro <- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), toString(i), "Dendrogram.png", sep="-")
+    png(paste(output, dendro, sep = "/"), width = 1200, height = 600)
     plot(fit, main = paste(toString(z), toString(ExpectedChange), toString(windowSize), "Dendrogram","| Clusters:", toString(k), sep=" "))
 
     #groups <- cutree(fit, k)
@@ -305,13 +300,15 @@ for (i in names)
     dev.off()
 
     #km.res <- kmeans(eventDF, k, nstart = 25)
-    png(paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), toString(i), "FvizCluster.png", sep="-"), width = 800, height = 800)
+    fvizclust<- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), toString(i), "FvizCluster.png", sep="-")
+    png(paste(output, fvizclust, sep = "/"), width = 800, height = 800)
     print(fviz_cluster(km.res, eventDF, main = paste(z, "Cluster Plot", "| Clusters:", toString(k))))
     dev.off()
 
     #d3heatmap or heatmaply
     my_palette <- colorRampPalette(c("red", "yellow", "green"))(n = 300)
-    png(paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), toString(i), "HeatMap.png", sep="-"), width = 1600, height = 1200)
+    heatMap <- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), toString(i), "HeatMap.png", sep="-")
+    png(paste(output, heatMap, sep = "/"), width = 1600, height = 1200)
     print(heatmap(eventHeat[,], main = paste(z, "Heat Map"),col=my_palette))
     #print(heatmap(eventDF[,150:210], main = paste(z, "Heat Map")))
     dev.off()
