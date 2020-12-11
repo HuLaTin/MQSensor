@@ -17,7 +17,7 @@ normalize <- function(x)
 
 
 #Set directory
-infileCSVone <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "Data", "Joulesv2_20201122_SL.csv")
+infileCSVone <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "Data", "Joulesv2_20201208_SL.csv")
 infileCSVtwo <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "Data", "V2TrialTimes.csv")
 output <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "eventsOutput")
 ExpectedChange <- as.double(.03)
@@ -29,6 +29,8 @@ kSwitch <- TRUE
 
 SensorData <- read.csv(infileCSVone, header = TRUE, sep=",", stringsAsFactors = FALSE)
 trialTimes <- read.csv(infileCSVtwo, header = TRUE, sep=",", stringsAsFactors = FALSE)
+
+expectedEvents <- nrow(trialTimes)
 
 set.seed(Sys.time())
 
@@ -55,6 +57,9 @@ SensorData <- SensorData[ -c(14, 15) ]
 SensorData <- SensorData[!(is.na(SensorData$Time) | SensorData$Time==""), ]
 SensorData$Time <- as.POSIXct(SensorData$Time, origin="1970-01-01", tz="GMT")
 trialTimes$Time <- as.POSIXct(trialTimes$Time, origin="1970-01-01", tz="GMT")
+
+parameterdf <- data.frame(expected=NA, true=NA, False=NA, Total=NA)[0, ]
+
 
 names <- c("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
 
@@ -184,9 +189,32 @@ for (i in names)
   write.csv(events, paste(output, Events, sep = "/"),)
   assign(paste("Events", toString(z), sep = "_"), events)
 
-  EventsTrim <- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "EventsTrim.csv", sep="-")
-  write.csv(eventsTrim, paste(output, EventsTrim, sep = "/"),)
-  assign(paste("EventsTrim", toString(z), sep = "_"), eventsTrim)
+  if (nrow(eventsTrim)>0) {
+    EventsTrim <- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "EventsTrim.csv", sep="-")
+    write.csv(eventsTrim, paste(output, EventsTrim, sep = "/"),)
+    assign(paste("EventsTrim", toString(z), sep = "_"), eventsTrim)
+  }
+
+  parameters <- paste(toString(z), toString(ExpectedChange), toString(windowSize), sep=" ")
+  eventsTrue <- nrow(eventsTrim)
+  eventsTotal <- nrow(events)
+  eventsFalse <- (eventsTotal - eventsTrue)
+
+  paraTemp <- data.frame(expectedEvents, eventsTrue, eventsFalse, eventsTotal, row.names = parameters)
+  parameterdf <- rbind(paraTemp, parameterdf)
+
+  if (nrow(eventsTrim)>0) {
+    for (y in chems) {
+      if (nrow(eventsTrim[grep(y, rownames(eventsTrim)), ])>0) {
+
+        trimTemp <- eventsTrim[grep(y, rownames(eventsTrim)), ]
+        rownames(trimTemp) = NULL
+        trimTemp <- cbind("chem" = y, trimTemp)
+        assign(paste(toString(z), toString(ExpectedChange), toString(windowSize), toString(y), "Chem",sep = "_"), trimTemp)
+
+      }
+    }
+  }
 
   eventList <- c("events", "eventsTrim")
 
@@ -198,7 +226,7 @@ for (i in names)
   {
     events <- get(i)
 
-    if (i == "eventsTrim") {
+    if (i == "eventsTrim" && nrow(eventsTrim)>0) {
 
       desired_length <- length(chems)
       list <- vector(mode = "list", length = desired_length)
@@ -210,13 +238,14 @@ for (i in names)
 
       dsNum <- min(unlist(list))
 
+      #not sure if this is needed anymore
       if (dsNum <= 1){
         next
       }
 
       dsData <- data.frame()
       for (y in chems) {
-        print(y)
+        #print(y)
 
         idx_chem <- events[grep(y, rownames(events)), ]
         idx_chem["pred"] <- as.factor(y)
@@ -227,90 +256,91 @@ for (i in names)
 
       dsData <- dsData[,c(ncol(dsData),1:(ncol(dsData)-1))]
 
-      ### Need to build training and test sets ###
-      sample = sample.split(dsData$pred, SplitRatio = .7)
-      train = subset(data, sample == TRUE)
-      test  = subset(data, sample == FALSE)
+      ### Creation of test and training sets ###
+      sample <- sample.split(dsData$pred, SplitRatio = .7)
+      train <- subset(dsData, sample == TRUE)
+      test  <- subset(dsData, sample == FALSE)
 
       ##### Naive Bayes Test ######
-      ##### Need to balance sets ####
-      # nbModel <- naiveBayes(pred ~., data = dsData)
-      # nbPredict <- predict(nbModel, test[,-1])
-      # table(pred=nbPredict,true=eventDF$Event)
-      #
-      # confusionMatrix(nbPredict, eventDF$Event)
+      nbModel <- naiveBayes(pred ~., data = train)
+      nbPredict <- predict(nbModel, test[,-1])
+      table(pred=nbPredict,true=test$pred)
+
+      CFMat <- confusionMatrix(nbPredict, test$pred)
+      assign(paste(toString(i), "NBMat", sep = "_"), CFMat)
 
 
       ### Decision Tree ###
-      ### also awaiting balanced sets ###
       ### this S#its gonna be so tight when it works ###
 
+      tree <- rpart(pred ~ .,
+                    data = train,
+                    method = "class")
 
-      # tree <- rpart(pred ~ .,
-      #               data = dsData,
-      #               method = "class")
-      #
-      # rpart.plot(tree, nn=TRUE)
-      #
-      # #probably need to remove column by name instead
-      # treePredict <- predict(object=tree,dsData[-1],type="class")
-      #
-      # table(treePredict, dsData$pred)
-      #
-      # confusionMatrix(treePredict, dsData$pred)
+      rpart.plot(tree, nn=TRUE)
+
+      #probably need to remove column by name instead
+      treePredict <- predict(object=tree,test[-1],type="class")
+
+      table(treePredict, test$pred)
+
+      confusionMatrix(treePredict, test$pred)
 
     }
 
-    eventDF <- events
-    eventHeat <- as.matrix(eventDF)
-
-    k <- round(sqrt(nrow(eventDF)))
-    #print(k)
-
-    #km.res <- kmeans(eventDF, k, nstart = 25)
-    ##########################################nstart???
-    if (kSwitch == TRUE){
-      # K-Means Cluster Analysis
-      km.res <- kmeans(eventDF, k)
-      aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
-      eventDF <- data.frame(eventDF, km.res$cluster)
-    } else {
-      # K-means with pam()
-      km.res <- pam(eventDF, k)
-      aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
-      eventDF <- data.frame(eventDF, km.res$cluster)
-    }
-
-    #####################################################################
-
-    # Ward Hierarchical Clustering
-    distance <- dist(eventDF, method = "euclidean") # distance matrix
-    fit <- hclust(distance, method="ward.D2")
-    groups <- cutree(fit, k)
-
-    # Events <- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "Events.csv", sep="-")
-    # write.csv(events, paste(output, Events, sep = "/"),)
-
-    dendro <- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), toString(i), "Dendrogram.png", sep="-")
-    png(paste(output, dendro, sep = "/"), width = 1200, height = 600)
-    plot(fit, main = paste(toString(z), toString(ExpectedChange), toString(windowSize), "Dendrogram","| Clusters:", toString(k), sep=" "))
-
-    #groups <- cutree(fit, k)
-    rect.hclust(fit, k, border="red")
-    dev.off()
-
-    #km.res <- kmeans(eventDF, k, nstart = 25)
-    fvizclust<- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), toString(i), "FvizCluster.png", sep="-")
-    png(paste(output, fvizclust, sep = "/"), width = 800, height = 800)
-    print(fviz_cluster(km.res, eventDF, main = paste(z, "Cluster Plot", "| Clusters:", toString(k))))
-    dev.off()
-
-    #d3heatmap or heatmaply
-    my_palette <- colorRampPalette(c("red", "yellow", "green"))(n = 300)
-    heatMap <- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), toString(i), "HeatMap.png", sep="-")
-    png(paste(output, heatMap, sep = "/"), width = 1600, height = 1200)
-    print(heatmap(eventHeat[,], main = paste(z, "Heat Map"),col=my_palette))
-    #print(heatmap(eventDF[,150:210], main = paste(z, "Heat Map")))
-    dev.off()
+    # eventDF <- events
+    # eventHeat <- as.matrix(eventDF)
+    #
+    # k <- round(sqrt(nrow(eventDF)))
+    # #print(k)
+    #
+    # #km.res <- kmeans(eventDF, k, nstart = 25)
+    # ##########################################nstart???
+    # if (kSwitch == TRUE){
+    #   # K-Means Cluster Analysis
+    #   km.res <- kmeans(eventDF, k)
+    #   aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
+    #   eventDF <- data.frame(eventDF, km.res$cluster)
+    # } else {
+    #   # K-means with pam()
+    #   km.res <- pam(eventDF, k)
+    #   aggregate(eventDF,by=list(km.res$cluster),FUN=mean)
+    #   eventDF <- data.frame(eventDF, km.res$cluster)
+    # }
+    #
+    # #####################################################################
+    #
+    # # Ward Hierarchical Clustering
+    # distance <- dist(eventDF, method = "euclidean") # distance matrix
+    # fit <- hclust(distance, method="ward.D2")
+    # groups <- cutree(fit, k)
+    #
+    # # Events <- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), "Events.csv", sep="-")
+    # # write.csv(events, paste(output, Events, sep = "/"),)
+    #
+    # dendro <- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), toString(i), "Dendrogram.png", sep="-")
+    # png(paste(output, dendro, sep = "/"), width = 1200, height = 600)
+    # plot(fit, main = paste(toString(z), toString(ExpectedChange), toString(windowSize), "Dendrogram","| Clusters:", toString(k), sep=" "))
+    #
+    # #groups <- cutree(fit, k)
+    # rect.hclust(fit, k, border="red")
+    # dev.off()
+    #
+    # #km.res <- kmeans(eventDF, k, nstart = 25)
+    # fvizclust<- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), toString(i), "FvizCluster.png", sep="-")
+    # png(paste(output, fvizclust, sep = "/"), width = 800, height = 800)
+    # print(fviz_cluster(km.res, eventDF, main = paste(z, "Cluster Plot", "| Clusters:", toString(k))))
+    # dev.off()
+    #
+    # #d3heatmap or heatmaply
+    # my_palette <- colorRampPalette(c("red", "yellow", "green"))(n = 300)
+    # heatMap <- paste(toString(Sys.Date()), toString(z), toString(ExpectedChange), toString(windowSize), toString(i), "HeatMap.png", sep="-")
+    # png(paste(output, heatMap, sep = "/"), width = 1600, height = 1200)
+    # print(heatmap(eventHeat[,], main = paste(z, "Heat Map"),col=my_palette))
+    # #print(heatmap(eventDF[,150:210], main = paste(z, "Heat Map")))
+    # dev.off()
   }
 }
+parameterdf <- parameterdf[rev(seq_len(nrow(parameterdf))), , drop = FALSE]
+
+write.csv(parameterdf, paste(Sys.Date(), ExpectedChange, windowSize, "paraDF", sep="_"))
