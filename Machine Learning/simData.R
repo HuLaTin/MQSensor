@@ -1,43 +1,39 @@
-#This function returns the first appearing set of modes.
-#https://stackoverflow.com/questions/2547402/how-to-find-the-statistical-mode
-# Mode <- function(x) {
-#   ux <- unique(x)
-#   ux[which.max(tabulate(match(x, ux)))]
+# float simNumber(float lower, float upper, float location) {
+#   return (((location*100) * (upper - lower) / 100) + lower);
 # }
 
-#This will return all modes
-# Modes <- function(x) {
-#   ux <- unique(x)
-#   tab <- tabulate(match(x, ux))
-#   ux[tab == max(tab)]
-# }
 
-chemTrim = MQ2_0.03_50_Ethanol_Chem
-y <- "Ethanol"
 
-# chemTrim = MQ2_0.03_50_Acetone_Chem
-# y <- "Acetone"
+#chemTrim = MQ2_0.03_50_Ethanol_Chem
+#y <- "Ethanol"
+
+chemTrim = MQ2_0.03_50_Acetone_Chem
+y <- "Acetone"
 
 chemTrim <- chemTrim[-c(1)]
 chemData <- data.frame()
-simNum <- 15
+simNum <- 11
 simData <- data.frame(matrix(NA, nrow=simNum))
 simData <- simData[-c(1)]
 simData["pred"] <- as.factor(y)
+randoNum <- data.frame(runif(simNum, min=0, max=1))
 
 for (x in 1:ncol(chemTrim)) {
   chemData[1,x] <- mean(chemTrim[,x])
   chemData[2:3,x] <- range(chemTrim[,x])
-  simData <- cbind(simData, data.frame(runif(simNum, min = chemData[2,x], max = chemData[3,x])))
+
+  simData[paste("V", x, sep="")] <- NA
+  lower <- chemData[2,x]
+  upper <- chemData[3,x]
+
+  for (z in 1:nrow(randoNum)) {
+    rLoc <- randoNum[z,]
+    simData[z,x+1] <- ((rLoc*100) * (upper - lower) / 100) + lower
+  }
 }
 
-for (x in 2:ncol(simData)) {
-  #print(colnames(simData[x]))
-  colnames(simData)[x] <-  paste("V", x-1, sep = "")
 
-}
-
-assign(paste(y, "simPara", sep = "_"), chemTrim)
+assign(paste(y, "simPara", sep = "_"), chemData)
 assign(paste(y, "simData", sep = "_"), simData)
 
 
