@@ -1,14 +1,14 @@
 #Hunter Tiner
 
-library(reshape2)
-library(cluster)
-library(factoextra)
-library(dplyr)
-library(rpart)
-library(rpart.plot)
-library(e1071)
-library(caTools)
-library(caret)
+suppressMessages(library(reshape2, quietly = TRUE))
+suppressMessages(library(cluster, quietly = TRUE))
+suppressMessages(library(factoextra, quietly = TRUE))
+suppressMessages(library(dplyr, quietly = TRUE))
+suppressMessages(library(rpart, quietly = TRUE))
+suppressMessages(library(rpart.plot, quietly = TRUE))
+suppressMessages(library(e1071, quietly = TRUE))
+suppressMessages(library(caTools, quietly = TRUE))
+suppressMessages(library(caret, quietly = TRUE))
 
 normalize <- function(x)
 {
@@ -22,10 +22,6 @@ infileCSVtwo <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor"
 output <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "eventsOutput")
 ExpectedChange <- as.double(.03)
 windowSize <- as.integer(50)
-#k <- as.integer(5)
-
-#Kmeans = TRUE / PAM = FALSE
-kSwitch <- TRUE
 
 SensorData <- read.csv(infileCSVone, header = TRUE, sep=",", stringsAsFactors = FALSE)
 trialTimes <- read.csv(infileCSVtwo, header = TRUE, sep=",", stringsAsFactors = FALSE)
@@ -39,11 +35,8 @@ chems <- unique(trialTimes[,"Chemical"])
 #this numbers the Chemicals events
 for (row in 1:nrow(trialTimes))
 {
-  #print(paste(trialTimes[row,"Chemical"], row, sep="-"))
   trialTimes[row, "Chemical"] <- paste(trialTimes[row,"Chemical"], row, sep="-")
 }
-
-#print(head(SensorData))
 
 #Sets column names.
 colnames(SensorData) <- c("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
@@ -51,6 +44,7 @@ colnames(SensorData) <- c("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
                           "Temp_C*", "Gas_ohms", "Humidity",
                           "Pressure_pa", "CPU_Load", "Throttled")
 
+#remove CPU_Load and Throttled from our dataset.
 SensorData <- SensorData[ -c(14, 15) ]
 
 
@@ -127,6 +121,9 @@ for (i in names)
   ###############################################################
   #when trying to normalize or scale ALL columns NAs are created.
 
+  #this would remove everything but sensors
+  #eventsCaptured <- eventsCaptured[-c(10:ncol(eventsCaptured))]
+
   #This removes ohms and pressure
   #eventsCaptured <- eventsCaptured[-c(11,13)]
   ##############################################################
@@ -147,6 +144,9 @@ for (i in names)
     #eventTemp[,2:ncol(eventTemp)] <- as.data.frame(lapply(eventTemp[,2:ncol(eventTemp)], normalize))
 
     ################################################################################################
+    #This sets the fraction of values to look for, outside of the sd range we select later
+    sdThresh <- ((ncol(eventTemp)-1)*windowSize)*.25
+    ###
     eventTemp["num"] <- seq(length=nrow(eventTemp))
     eventTemp <- melt(eventTemp, id=c("Time","num"))
     events <- cbind(events, eventTemp[,4])
@@ -208,13 +208,64 @@ for (i in names)
       if (nrow(eventsTrim[grep(y, rownames(eventsTrim)), ])>0) {
 
         trimTemp <- eventsTrim[grep(y, rownames(eventsTrim)), ]
+
+
+        ##########################################################################################################################
+        #chemTrim = trimTemp
+        #chemTrim <- chemTrim[-c(1)]
+        chemData <- data.frame()
+        deviData <- data.frame()
+
+        for (x in 1:ncol(trimTemp)) {
+          chemData[1,x] <- mean(trimTemp[,x])
+
+          #Standard deviation
+          for (w in 1:nrow(trimTemp)) {
+            deviData[w,x] <- (trimTemp[w,x] - chemData[1,x])^2
+          }
+
+          #chemData[2,x]  <- (sqrt(sum(deviData[,x])/nrow(deviData)))*3 #3 standard deviations
+          chemData[2,x]  <- (sqrt(sum(deviData[,x])/nrow(deviData)))*2 #2 standard deviations
+          #chemData[2,x]  <- sqrt(sum(deviData[,x])/nrow(deviData)) #1 standard deviation
+
+        }
+
+
+        for (w in 1:nrow(trimTemp)) {
+          q=0
+          for (x in 1:ncol(trimTemp)) {
+            chemData[3,x] <- trimTemp[w,x]
+            #chemData[4,x] <- (chemData[3,x] - chemData[1,x])
+
+            if ((chemData[3,x]>(chemData[1,x]+chemData[2,x])) || (chemData[3,x]<(chemData[1,x]-chemData[2,x]))) {
+              q <- q+1
+              #print(q)
+            }
+          }
+          if (q>=sdThresh) {
+            #q would be compared to some threshold decided here
+            #should be a percentage of windowsize*ncol(SensorData)-1
+            #this way it will always be the same fraction of the amount of readings
+
+            #print(rownames(trimTemp[w,]))
+            print(paste(rownames(trimTemp[w,]), "is looking wack! Maybe You should remove it.", sep=" "))
+            #drop row??
+          }
+
+        }
+
         rownames(trimTemp) = NULL
         trimTemp <- cbind("chem" = y, trimTemp)
+        ##########################################################################################################################
+
         assign(paste(toString(z), toString(ExpectedChange), toString(windowSize), toString(y), "Chem",sep = "_"), trimTemp)
+
 
       }
     }
   }
+
+
 
   eventList <- c("events", "eventsTrim")
 
@@ -255,6 +306,9 @@ for (i in names)
       }
 
       dsData <- dsData[,c(ncol(dsData),1:(ncol(dsData)-1))]
+
+      ############################################################################
+      ############################################################################
 
       ### Creation of test and training sets ###
       sample <- sample.split(dsData$pred, SplitRatio = .7)
