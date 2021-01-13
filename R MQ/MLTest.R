@@ -20,8 +20,8 @@ normalize <- function(x)
 infileCSVone <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "Data", "Joulesv2_20201208_SL.csv")
 infileCSVtwo <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "Data", "V2TrialTimes.csv")
 output <- file.path("C:", "Users", "Hunter Tiner", "Documents", "MQSensor", "Machine Learning", "eventsOutput")
-ExpectedChange <- as.double(.03)
-windowSize <- as.integer(50)
+ExpectedChange <- as.double(.035)
+windowSize <- as.integer(30)
 
 SensorData <- read.csv(infileCSVone, header = TRUE, sep=",", stringsAsFactors = FALSE)
 trialTimes <- read.csv(infileCSVtwo, header = TRUE, sep=",", stringsAsFactors = FALSE)
@@ -149,7 +149,14 @@ for (i in names)
     ###
     eventTemp["num"] <- seq(length=nrow(eventTemp))
     eventTemp <- melt(eventTemp, id=c("Time","num"))
+
+    rowNameFrame <- data.frame()
     events <- cbind(events, eventTemp[,4])
+
+    for (b in 1:nrow(eventTemp)) {
+      row.names(events)[b] <- paste(eventTemp[b,3], eventTemp[b,2], sep="_")
+    }
+
     names(events)[c(ncol(events))] <- paste("Event", toString(eventNum), sep=" ")
   }
   #which(is.na(events))
@@ -396,5 +403,6 @@ for (i in names)
   }
 }
 parameterdf <- parameterdf[rev(seq_len(nrow(parameterdf))), , drop = FALSE]
+
 
 write.csv(parameterdf, paste(Sys.Date(), ExpectedChange, windowSize, "paraDF", sep="_"))

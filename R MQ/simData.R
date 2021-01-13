@@ -1,5 +1,5 @@
 
-simNum <- 50
+simNum <- 10
 
 sensor <- "MQ2"
 threshold <- 0.03
@@ -11,6 +11,7 @@ testData <- data.frame()
 
 for (y in chems) {
   chemTrim <- get(paste(sensor,threshold,windowSize,y,"Chem", sep="_"))
+  colNamedf <- as.data.frame(colnames(chemTrim))
   hD <- chemTrim
 
   set.seed(Sys.time())
@@ -33,7 +34,7 @@ for (y in chems) {
     #chemData[2,x]  <- sqrt(sum(deviData[,x])/nrow(deviData)) #1 standard deviation
 
 
-    simData[paste("V", x, sep="")] <- NA
+    simData[paste(colNamedf[x+1,], sep="")] <- NA
 
     lower <- chemData[1,x]-chemData[2,x]
     upper <- chemData[1,x]+chemData[2,x]
@@ -67,8 +68,8 @@ table(pred=nbPredict,true=testData$chem)
 CFMat <- confusionMatrix(nbPredict, testData$chem)
 CFMat
 
-write.csv(simTotalData, "simData.csv")
-write.csv(testData, "testData.csv")
+write.csv(simTotalData, "simData.csv", row.names = FALSE)
+write.csv(testData, "testData.csv", row.names = FALSE)
 
 #####################################################
 #####################################################
