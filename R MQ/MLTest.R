@@ -150,7 +150,8 @@ for (i in names)
     eventTemp["num"] <- seq(length=nrow(eventTemp))
     eventTemp <- melt(eventTemp, id=c("Time","num"))
 
-    rowNameFrame <- data.frame()
+    #not sure what this line is for...
+    #rowNameFrame <- data.frame()
     events <- cbind(events, eventTemp[,4])
 
     for (b in 1:nrow(eventTemp)) {
