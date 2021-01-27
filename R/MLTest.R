@@ -243,7 +243,6 @@ for (i in names)
           q=0
           for (x in 1:ncol(trimTemp)) {
             chemData[3,x] <- trimTemp[w,x]
-            #chemData[4,x] <- (chemData[3,x] - chemData[1,x])
 
             if ((chemData[3,x]>(chemData[1,x]+chemData[2,x])) || (chemData[3,x]<(chemData[1,x]-chemData[2,x]))) {
               q <- q+1

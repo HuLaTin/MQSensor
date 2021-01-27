@@ -1,3 +1,9 @@
+#####################
+###  HUNTER TINER ###
+#####################
+## HuLaTin @ GMAIL ##
+#####################
+
 def movingAvg(sensorData, stat):
     """
     Function for creation of moving average of sensorData
@@ -49,6 +55,7 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
     # test without these lines of code?
     eventIndex.loc[0,'start'] = 0
     eventIndex.loc[0,'end'] = 0
+    sdThresh = 0
     
     # finding events
     ######################
@@ -188,18 +195,19 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
     eventName = csvParameters.copy()
     eventName.append("Events.csv")
     eventName = "_".join(eventName)
-    eventOutput = (outputDir, eventName)
+    eventOutput = (outputDir, "events", eventName)
     eventOutput = "\\".join(eventOutput)
-    events.to_csv(eventOutput)
+    events.to_csv(eventOutput,index=False)
     
     # saves eventsTrim to .csv, if dataframe contains an event
+    balanceThis = None
     if len(eventsTrim) > 0:
         eventTrimName = csvParameters.copy()
         eventTrimName.append("EventsTrim.csv")
         eventTrimName = "_".join(eventTrimName)
-        eventOutput = (outputDir, eventTrimName)
-        eventOutput = "\\".join(eventOutput)
-        eventsTrim.to_csv(eventOutput)
+        eventOutput = (outputDir,"eventsTrim", eventTrimName)
+        balanceThis = eventOutput = "\\".join(eventOutput)
+        eventsTrim.to_csv(eventOutput,index=False)
 
     # pointer to csvParameters
     #parameters = csvParameters.copy()
@@ -215,4 +223,74 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
     parameterlst = [eventPara, expectedEvents, eventsTrue, eventsFalse, eventsTotal]
     parameterlst = pd.DataFrame([parameterlst])
     
-    return events, eventsTrim, parameterlst
+    return events, eventsTrim, parameterlst, sdThresh, balanceThis, triggerSensor
+
+def downsampleData(cwd, pd, today, outputDir, balanceThis, triggerSensor):
+    '''
+    used to downsample to balance classes
+    '''
+    # setting output directory
+    outputDir = ('Python\\machineLearning\downsampled')
+    outputDir = (cwd, outputDir)
+    outputDir = "\\".join(outputDir)
+
+    dsName = [str(today), str(triggerSensor), "downsampled.csv"]
+    dsName = "_".join(dsName)
+
+    folderPath = (outputDir, dsName)
+    dsCSV = "\\".join(folderPath)
+
+    # import csv
+    chemEvents = pd.read_csv(balanceThis)
+
+    # split string, selects chemical name (drops the numbering)
+    chemEvents['chemical'] = chemEvents['chemical'].str.split("-").str[0]
+
+    # rename column
+    chemEvents = chemEvents.rename(columns={"chemical": "pred"})
+
+    # groups by class/chemical, downsamples to balance the dataset
+    g = chemEvents.groupby('pred')
+    chemEvents = pd.DataFrame(g.apply(lambda chemEvents: chemEvents.sample(g.size().min()).reset_index(drop=True)))
+    
+    # saves to csv
+    chemEvents.to_csv(dsCSV,index=False)
+    
+    
+def checkForOutliers(chems, eventsTrim, math, pd, stat, sdThresh):
+    '''
+    Used to check for outliers in the identified events.
+    '''
+    outliers = [] 
+    if len(eventsTrim) > 0:
+        for y in chems:
+            if len(eventsTrim[eventsTrim['chemical'].str.contains(y)]) > 0:
+                trimTemp = eventsTrim[eventsTrim['chemical'].str.contains(y)]
+                chemData = pd.DataFrame()
+                deviData = pd.DataFrame()
+                
+                for x in range(1, len(trimTemp.columns)):
+                    chemData.loc[0, x] = stat.mean(trimTemp.iloc[:,x])
+                                    
+                    # standard deviation
+                    for w in range(0, len(trimTemp)):
+                        deviData.loc[w,x] = ((trimTemp.iloc[w,x] - chemData.loc[0,x]) ** 2)
+                    
+                    ### insert math
+                    # Check my indexing!
+                    doMath = math.sqrt(sum(deviData.iloc[:,x-1])/len(deviData))
+                    chemData.loc[1,x] = doMath*2 # multiple by two for 2 deviations
+                
+                # Checking for outliers using standard deviation    
+                for w in range(0, len(trimTemp)):
+                    q = 0
+                    for  x in range(1, len(trimTemp.columns)):
+                        chemData.loc[2,x] = trimTemp.iloc[w,x]
+                        
+                        if (chemData.loc[2,x]>(chemData.loc[0,x]+chemData.loc[2,x])) or (chemData.loc[2,x]<(chemData.loc[0,x]-chemData.loc[1,x])):
+                            q = q + 1
+                
+                    if q >= sdThresh:
+                        outliers.append(str(trimTemp.loc[w,'chemical']))
+
+    return outliers

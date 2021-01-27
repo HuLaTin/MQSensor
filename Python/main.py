@@ -1,6 +1,8 @@
 #####################
 ###  HUNTER TINER ###
 #####################
+## HuLaTin @ GMAIL ##
+#####################
 
 # Import libraries
 import sys
@@ -16,7 +18,8 @@ from pandas.core.frame import DataFrame
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import statistics as stat
-from Python.util import eventDetection, movingAvg
+import math
+from Python.util import checkForOutliers, eventDetection, movingAvg, downsampleData
 
 # set today's date
 today = date.today()
@@ -30,6 +33,15 @@ expectedChange = float(.1)
 windowSize = int(50)
 
 useMovingAvg = False
+
+# creating a dataframe to store useful counts 
+parameterdf = pd.DataFrame()
+parameterlst = []
+
+# initializing for use later
+events = None
+eventsTrim = None
+sdThresh = 0
 
 # location of datafiles, readings and times of known experiments
 sensorData = pd.read_csv(r'C:\Users\Hunter Tiner\Documents\MQSensor\R\Data\Joulesv2_20201208_SL.csv')
@@ -83,11 +95,9 @@ if useMovingAvg == True:
     movAvgCSV = "\\".join(movAvgCSV)
     sensorData.to_csv(movAvgCSV)
     
-# creating a dataframe to store useful counts 
-parameterdf = pd.DataFrame()
-parameterlst = []
-events = None
-eventsTrim = None
+    # This program is not designed to use this "smoothed" data
+    sys.exit("A new file has been created!")
+    
 
 # creates list of columns that will be used as the "trigger" for determining events
 names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
@@ -96,12 +106,17 @@ names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
 ################## CHECK INDEXING #############################
 for i in names:
     #input and output for function
-    events, eventsTrim, parameterlst, \
+    events, eventsTrim, parameterlst, sdThresh, balanceThis, triggerSensor \
         = eventDetection(today, scaler, expectedChange, windowSize, sensorData,
                    trialTimes, outputDir, i, pd, NaN, datetime)
+        
+    # this checks for outliers, doesn't change data only output to console. (it should anyways...)
+    #outliers, = checkForOutliers(chems, eventsTrim, math, pd, stat, sdThresh)
+    
+    downsampleData(cwd, pd, today, outputDir, balanceThis, triggerSensor)
     
     parameterdf = parameterdf.append(parameterlst)
-    
+        
     break
     
     # If statement
@@ -110,24 +125,4 @@ for i in names:
 parameterdf.columns = ['Parameters', 'Expected', 'True', 'False', 'Total']
 paraCSV = (outputDir, today + '_Parameters.csv')
 paraCSV = "\\".join(paraCSV)
-parameterdf.to_csv(paraCSV)
-
-if len(eventsTrim) > 0:
-    for y in chems:
-        if len(eventsTrim[eventsTrim['chemical'].str.contains(y)]) > 0:
-            trimTemp = eventsTrim[eventsTrim['chemical'].str.contains(y)]
-            chemData = pd.DataFrame()
-            deviData = pd.DataFrame()
-            
-            for x in range(1, len(trimTemp.columns)):
-                chemData.loc[0, x] = stat.mean(trimTemp.iloc[:,x])
-                
-                
-                ### Broken for loop
-                # standard deviation
-                #for w in range(0, len(trimTemp)):
-                #    deviData.loc[w,x] = (trimTemp.loc[w,x] - chemData.loc[0,x])^2
-                    
-                ### insert math
-                
-deviData
+parameterdf.to_csv(paraCSV,index=False)
