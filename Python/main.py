@@ -6,8 +6,6 @@
 
 # Import libraries
 import sys
-# tells python interpreter to include this path when importing modules
-#sys.path.append(r'C:\Users\Hunter Tiner\Documents\MQSensor\Python')
 import os
 from numpy.core.numeric import NaN
 from numpy.lib.function_base import append
@@ -56,9 +54,6 @@ outputDir = "\\".join(outputDir)
 # always set random seed!
 random.seed(datetime.now())
 
-# creates a list of chemicals seen in "trialTimes"
-chems = np.unique(trialTimes["Chemical"])
-
 # renames chemicals in "trialTimes", adds a number at end for easier identification
 for x in range(0, len(trialTimes)):
     chemName = (trialTimes.loc[x, "Chemical"], str(x+1))
@@ -85,6 +80,26 @@ del sensorData['Throttled']
 # sets our 'Time" columns to a datetime format
 sensorData['Time'] = pd.to_datetime(sensorData['Time'], format='%Y-%m-%d %H:%M:%S.%f')
 trialTimes['Time'] = pd.to_datetime(trialTimes['Time'], format='%Y-%m-%d %H:%M:%S.%f')
+
+# sets range of times
+startRange = sensorData.loc[0,'Time']
+endRange = sensorData.loc[len(sensorData)-1, 'Time']
+
+# inserts new column
+trialTimes['withinRange'] = False
+
+# compares times
+for y in range(0, len(trialTimes)):
+    if startRange < trialTimes.loc[y,'Time'] and trialTimes.loc[y,'Time'] < endRange:
+        trialTimes.loc[y, 'withinRange'] = True
+
+# removes data that occured outside our range        
+trialTimes = trialTimes[trialTimes['withinRange'] == True]
+trialTimes = trialTimes.drop(columns = 'withinRange')
+trialTimes = trialTimes.reset_index(drop=True)
+
+# creates a list of chemicals seen in "trialTimes"
+chems = np.unique(trialTimes["Chemical"])
 
 # need to troubleshoot
 # if using this, include flag in output?
@@ -122,7 +137,7 @@ for i in names:
     # If statement
     # Hyperparameterization
 
-parameterdf.columns = ['Parameters', 'Expected', 'True', 'False', 'Total']
+parameterdf.columns = ['triggerSensor','Threshold', 'Expected', 'True', 'False', 'Total']
 paraCSV = (outputDir, today + '_Parameters.csv')
 paraCSV = "\\".join(paraCSV)
 parameterdf.to_csv(paraCSV,index=False)

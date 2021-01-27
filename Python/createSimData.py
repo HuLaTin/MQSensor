@@ -29,7 +29,7 @@ random.seed(datetime.now())
 simNum = 15  #
 ##############
 
-# import data
+# specify data set to use as base
 trueData = pd.read_csv(r'C:\Users\Hunter Tiner\Documents\MQSensor\Python\machineLearning\downsampled\2021Jan26_MQ2_downsampled.csv')
 
 # creates a list of all chemicals that appear

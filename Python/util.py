@@ -208,11 +208,6 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
         eventOutput = (outputDir,"eventsTrim", eventTrimName)
         balanceThis = eventOutput = "\\".join(eventOutput)
         eventsTrim.to_csv(eventOutput,index=False)
-
-    # pointer to csvParameters
-    #parameters = csvParameters.copy()
-    csvParameters.remove(today)
-    eventPara = "_".join(csvParameters)
     
     # need to check row count here
     # count of expected events
@@ -220,7 +215,7 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
     eventsTrue = len(eventsTrim)
     eventsTotal = len(events)
     eventsFalse = (eventsTotal - eventsTrue)
-    parameterlst = [eventPara, expectedEvents, eventsTrue, eventsFalse, eventsTotal]
+    parameterlst = [triggerSensor, expectedChange, expectedEvents, eventsTrue, eventsFalse, eventsTotal]
     parameterlst = pd.DataFrame([parameterlst])
     
     return events, eventsTrim, parameterlst, sdThresh, balanceThis, triggerSensor
