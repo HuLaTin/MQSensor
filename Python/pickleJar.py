@@ -1,5 +1,6 @@
 import pickle
 import pandas as pd
+import numpy as np
 import os
 
 # get current working directory
