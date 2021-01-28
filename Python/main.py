@@ -19,6 +19,15 @@ import statistics as stat
 import math
 from Python.util import checkForOutliers, eventDetection, movingAvg, downsampleData
 
+# get current working directory
+cwd = os.getcwd()
+
+# Set output
+outputDir = ('Python\\eventsOutput')
+outputDir = (cwd, outputDir)
+outputDir = "\\".join(outputDir)
+
+
 # set today's date
 today = date.today()
 today = today.strftime("%Y%b%d")
@@ -42,14 +51,8 @@ eventsTrim = None
 sdThresh = 0
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'C:\Users\Hunter Tiner\Documents\MQSensor\R\Data\Joulesv2_20201208_SL.csv')
-trialTimes = pd.read_csv(r'C:\Users\Hunter Tiner\Documents\MQSensor\R\Data\V2TrialTimes.csv')
-
-# Set output
-cwd = os.getcwd()
-outputDir = ('Python\\eventsOutput')
-outputDir = (cwd, outputDir)
-outputDir = "\\".join(outputDir)
+sensorData = pd.read_csv(r'Python\Data\Joulesv2_20201208_SL.csv')
+trialTimes = pd.read_csv(r'Python\Data\V2TrialTimes.csv')
 
 # always set random seed!
 random.seed(datetime.now())

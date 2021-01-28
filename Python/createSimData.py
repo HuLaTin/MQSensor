@@ -30,7 +30,7 @@ simNum = 15  #
 ##############
 
 # specify data set to use as base
-trueData = pd.read_csv(r'C:\Users\Hunter Tiner\Documents\MQSensor\Python\machineLearning\downsampled\2021Jan26_MQ2_downsampled.csv')
+trueData = pd.read_csv(r'Python\machineLearning\downsampled\2021Jan26_MQ2_downsampled.csv')
 
 # creates a list of all chemicals that appear
 chems =  np.unique(trueData['pred'])
