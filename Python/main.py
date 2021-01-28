@@ -17,7 +17,8 @@ from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import statistics as stat
 import math
-from Python.util import checkForOutliers, eventDetection, movingAvg, downsampleData
+from Python.util import checkForOutliers, eventDetection, movingAvg, downsampleData, \
+    genRandomBits, getNeighbors, getValueOfBits
 
 # get current working directory
 cwd = os.getcwd()
@@ -27,7 +28,6 @@ outputDir = ('Python\\eventsOutput')
 outputDir = (cwd, outputDir)
 outputDir = "\\".join(outputDir)
 
-
 # set today's date
 today = date.today()
 today = today.strftime("%Y%b%d")
@@ -35,8 +35,16 @@ today = today.strftime("%Y%b%d")
 # Our scaler for the min/max normalization
 scaler=MinMaxScaler()
 
+#################################################
+# bitMinValue = .01
+# bitMaxValue = 1
+# bits = genRandomBits(random, 10)
+################################################
+
 # desired threshold of change that determines if events occured
+#expectedChange = getValueOfBits(bits,bitMinValue,bitMaxValue)
 expectedChange = float(.1)
+
 windowSize = int(50)
 
 useMovingAvg = False
@@ -134,7 +142,10 @@ for i in names:
     downsampleData(cwd, pd, today, outputDir, balanceThis, triggerSensor)
     
     parameterdf = parameterdf.append(parameterlst)
-        
+   
+    # TrueDetected - FalseDetected
+    score = int(parameterlst[3] - parameterlst[4])
+          
     break
     
     # If statement
