@@ -17,8 +17,7 @@ from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import statistics as stat
 import math
-from Python.util import checkForOutliers, eventDetection, movingAvg, downsampleData, \
-    genRandomBits, getNeighbors, getValueOfBits
+from Python.util import checkForOutliers, eventDetection, movingAvg, downsampleData
 
 # get current working directory
 cwd = os.getcwd()
@@ -28,6 +27,7 @@ outputDir = ('Python\\eventsOutput')
 outputDir = (cwd, outputDir)
 outputDir = "\\".join(outputDir)
 
+
 # set today's date
 today = date.today()
 today = today.strftime("%Y%b%d")
@@ -35,16 +35,8 @@ today = today.strftime("%Y%b%d")
 # Our scaler for the min/max normalization
 scaler=MinMaxScaler()
 
-#################################################
-# bitMinValue = .01
-# bitMaxValue = 1
-# bits = genRandomBits(random, 10)
-################################################
-
 # desired threshold of change that determines if events occured
-#expectedChange = getValueOfBits(bits,bitMinValue,bitMaxValue)
 expectedChange = float(.1)
-
 windowSize = int(50)
 
 useMovingAvg = False
@@ -61,6 +53,10 @@ sdThresh = 0
 # location of datafiles, readings and times of known experiments
 sensorData = pd.read_csv(r'Python\Data\Joulesv2_20201208_SL.csv')
 trialTimes = pd.read_csv(r'Python\Data\V2TrialTimes.csv')
+
+# pickleJar import
+# sensorData = pd.read_csv(r'Python\Data\pickleJar\sensorData.csv)
+# trialTimes = pd.read_csv(r'Python\Data\pickleJar\trialTimes.csv')
 
 # always set random seed!
 random.seed(datetime.now())
@@ -142,10 +138,7 @@ for i in names:
     downsampleData(cwd, pd, today, outputDir, balanceThis, triggerSensor)
     
     parameterdf = parameterdf.append(parameterlst)
-   
-    # TrueDetected - FalseDetected
-    score = int(parameterlst[3] - parameterlst[4])
-          
+        
     break
     
     # If statement
