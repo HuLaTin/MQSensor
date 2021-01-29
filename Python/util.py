@@ -290,9 +290,87 @@ def checkForOutliers(chems, eventsTrim, math, pd, stat, sdThresh):
 
     return outliers
 
-def genRandomBits(random, K):
+def geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, sensorData,
+                   trialTimes, i, pd,  datetime):
+    '''
+    '''
+    triggerSensor = i
+    eventName = (str(i), "ADC")
+    # .join works similar to paste function
+    i = eventName = "_".join(eventName)
+    
+    # applying scaler to column "i" (sensor column)
+    sensorData["ADC_N"] = scaler.fit_transform(sensorData[[i]])
+    
+    # creates new columns
+    # first value in "Change" is 0   
+    sensorData.loc[0, "Change"] = 0
+    sensorData['Event'] = None
+    
+    # determines change between each timepoint of normalized data column
+    ######################
+    # do we need this -1??
+    for z in range(1, len(sensorData)-1):
+        sensorData.loc[z, "Change"] = sensorData.loc[z, "ADC_N"] - sensorData.loc[z-1, "ADC_N"]
+    
+    # creation of empty dataframes containing these columns           
+    timeIndex = pd.DataFrame(columns=['Time'])
+    subsetCounter = 0
+
+    # finding events
+    ######################
+    # do we need this -1??        
+    for z in range(0, len(sensorData)-1):
+        # if change is greater than expectedChange / "Event" is True
+        if sensorData.loc[z, "Change"] > expectedChange:
+            sensorData.loc[z, "Event"] = "True"
+            # checks to make sure we dont run out of the dataframe
+            # store start/end times of events
+            if z > 4 and z < (len(sensorData)-(windowSize - 5)):
+                subsetCounter = (subsetCounter + 1)
+                timeIndex.loc[subsetCounter - 1, 'Time'] = sensorData.loc[z - 1, 'Time' ]
+        else:
+            # otherwise "False"
+            sensorData.loc[z,'Event'] = "False"
+      
+    timeIndex['Event'] = "False"
+    
+    # set time format    
+    timeIndex['Time'] = pd.to_datetime(timeIndex['Time'], format='%Y-%m-%d %H:%M:%S.%f')  
+    # set format for our time stamps
+    fmt = '%Y-%m-%d %H:%M:%S'
+    timeIndex['Time'] = timeIndex['Time'].astype('datetime64[s]')       
+    for l in range(0, len(trialTimes)):
+        for m in range(0, len(timeIndex)):
+            tDelta = datetime.strptime(str(trialTimes.loc[l,'Time']),fmt) - datetime.strptime(str(timeIndex.loc[m, 'Time']),fmt)
+            tDelta = tDelta.total_seconds()/60
+            timeIndex.loc[m, 'timeDiff'] = tDelta
+            if abs(timeIndex.loc[m, 'timeDiff']) <= 5:
+                timeIndex.loc[m, 'Event'] = "True"
+                break
+
+    eventsTrue = 0
+    eventsFalse = 0
+    if len(timeIndex) >= 1:
+        #valueCounts = timeIndex.Event.value_counts()
+        eventsTrue = len(timeIndex[timeIndex['Event'].str.contains("True")])
+        eventsFalse = len(timeIndex[timeIndex['Event'].str.contains("False")])
+        
+        print("True: " + str(eventsTrue))
+        print("False: " + str(eventsFalse))
+    
+    score = eventsTrue / (expectedEvents * (eventsFalse + 1))
+    print("expectedChange: " + str(expectedChange))
+    print("score: " + str(score))
+    
+    parameterlst = [triggerSensor, expectedChange, expectedEvents, eventsTrue, eventsFalse, score]
+    parameterlst = pd.DataFrame([parameterlst])
+    
+    return(score)
+
+def genRandomBits(random, numBits):
     bits = dict()
-    for i in range(K):
+    for i in range(numBits):
         if random.random() > 0.5:
             bits[i] = 1
         else:
@@ -304,23 +382,28 @@ def getValueOfBits(bits,min,max):
     for i in bits:
         x += (2**i)*bits[i]
     # Gets the percentage of 0-1023, converts to a %, and returns the number equal to the percent between min and max
-    return((((x/1023)*100) * (max - min) / 100) + min)
+    return((((x/255)*100) * (max - min) / 100) + min)
 
-def getNeighbors( bitMinValue, bitMaxValue, bits):
+def getNeighbors( bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expectedChange, windowSize, sensorData,
+                trialTimes, l, pd,  datetime):
     # Returns a dict where the key is the bit of bits that was flipped, the value is the cost of the resulting dict (from the flipped bit)
     neighborBitsCost = bits.copy()
+    parameterlst = 0
     x = int()
     for i in neighborBitsCost:
         if neighborBitsCost[i] == 1:
             neighborBitsCost[i] = 0
         else:
             neighborBitsCost[i] = 1
-        x = getValueOfBits(neighborBitsCost,bitMinValue, bitMaxValue)
+        expectedChange = getValueOfBits(neighborBitsCost, bitMinValue, bitMaxValue)
+        x = geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, sensorData,
+                    trialTimes, l, pd,  datetime)
+        # x = getValueOfBits(neighborBitsCost,bitMinValue, bitMaxValue)
         neighborBitsCost[i] = x
     bestScore = 0
     bestBits = dict()
     for j in neighborBitsCost:
-        if neighborBitsCost[j] > bestScore:
+        if neighborBitsCost[j] >= bestScore:
             bestScore = neighborBitsCost[j]
             bestBits = bits.copy()
             if bestBits[j] == 1:
@@ -328,6 +411,8 @@ def getNeighbors( bitMinValue, bitMaxValue, bits):
             else:
                 bestBits[j] = 1
             print(bestBits)
+            print(getValueOfBits(bestBits, bitMinValue, bitMaxValue))
             print(bestScore)
-    getNeighbors(bestBits)
-    return
+    getNeighbors(bitMinValue, bitMaxValue, bestBits, expectedEvents, scaler, expectedChange, windowSize, sensorData,
+                trialTimes, l, pd,  datetime)
+    return (parameterlst)
