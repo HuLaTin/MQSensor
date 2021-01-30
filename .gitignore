@@ -2,8 +2,10 @@
 .Rhistory
 .RData
 .Ruserdata
-.vscode
 __pycache__/
 **/*.csv
 *.pyc
 *.pyo
+.vscode/
+.vscode/settings.json
+.vscode/settings.json
