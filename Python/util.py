@@ -294,7 +294,7 @@ def geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, senso
                    trialTimes, i, pd,  datetime):
     '''
     '''
-    triggerSensor = i
+    #triggerSensor = i
     eventName = (str(i), "ADC")
     # .join works similar to paste function
     i = eventName = "_".join(eventName)
@@ -364,11 +364,19 @@ def geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, senso
     print("expectedChange: " + str(expectedChange))
     print("score: " + str(score))
     
-    parameterlst = [triggerSensor, expectedChange, expectedEvents, eventsTrue, eventsFalse, score]
-    parameterlst = pd.DataFrame([parameterlst])
+    #parameterlst = [triggerSensor, expectedChange, expectedEvents, eventsTrue, eventsFalse, score]
+    #parameterlst = pd.DataFrame([parameterlst])
     
-    return(score)
+    return(score, eventsTrue, eventsFalse)
 
+def scoringCSV(genScoring, genCSV, pd):
+    '''
+    '''
+    openGenCSV = pd.read_csv(genCSV)
+    df_length = len(openGenCSV)
+    openGenCSV.loc[df_length] = genScoring
+    openGenCSV.to_csv(genCSV, index=False)
+    
 def genRandomBits(random, numBits):
     '''
     Returns dictionary with random bits
@@ -408,18 +416,19 @@ def getValueOfBits(bits,min,max):
     return((((x/1023)*100) * (max - min) / 100) + min)
 
 def getNeighbors( bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expectedChange, windowSize, sensorData,
-                trialTimes, l, pd,  datetime):
+                trialTimes, l, pd,  datetime, genCSV):
     '''
     
     '''
     # Returns a dict where the key is the bit of bits that was flipped, the value is the cost of the resulting dict (from the flipped bit)
     neighborBitsCost = bits.copy()
-    parameterlst = 0
+    eventsTrue = 0
+    eventsFalse = 0
     x = int()
     for i in neighborBitsCost:
         neighborBitsCost[i] = flipBit(neighborBitsCost[i])
         expectedChange = getValueOfBits(neighborBitsCost, bitMinValue, bitMaxValue)
-        x = geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, sensorData,
+        x, eventsTrue, eventsFalse = geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, sensorData,
                     trialTimes, l, pd,  datetime)
         # x = getValueOfBits(neighborBitsCost,bitMinValue, bitMaxValue)
         neighborBitsCost[i] = x
@@ -434,9 +443,11 @@ def getNeighbors( bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expect
             print("Flipped bit: " + str(j))
             print("Value - " + str(getValueOfBits(bestBits, bitMinValue, bitMaxValue)))
             print("Best score = " + str(bestScore))
+            genScoring = [l, expectedChange, eventsTrue, eventsFalse, bestScore]
+            scoringCSV(genScoring, genCSV, pd)
     getNeighbors(bitMinValue, bitMaxValue, bestBits, expectedEvents, scaler, expectedChange, windowSize, sensorData,
-                trialTimes, l, pd,  datetime)
-    return (parameterlst)
+                trialTimes, l, pd,  datetime, genCSV)
+    return 
 
 # class bitFlipping:    
 #     def __init__(numOfBits,min,max):

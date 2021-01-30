@@ -7,7 +7,7 @@ import pandas as pd
 import random
 from datetime import datetime, date
 from sklearn.preprocessing import MinMaxScaler
-from Python.util import geneticMutateScore, genRandomBits, getNeighbors, getValueOfBits
+from Python.util import genRandomBits, getNeighbors
 
 # get current working directory
 cwd = os.getcwd()
@@ -21,11 +21,20 @@ outputDir = "\\".join(outputDir)
 today = date.today()
 today = today.strftime("%Y%b%d")
 
+genColNames = ["sensor", "expectedChange", "True", "False", "bestScore"]
+geneticScoring = ["0", "0", "0", "0", "0"]
+geneticScoring = pd.DataFrame(geneticScoring).T
+geneticScoring.columns = genColNames
+genCSV = (outputDir, "mutation" ,today + '_geneticScore.csv')
+genCSV = "\\".join(genCSV)
+#geneticScoring.to_csv(genCSV, index=False)
+
+
 # Our scaler for the min/max normalization
 scaler=MinMaxScaler()
 
-bitMinValue = 0.05
-bitMaxValue = .5
+bitMinValue = 0.07
+bitMaxValue = .25
 
 
 # desired threshold of change that determines if events occured
@@ -84,21 +93,17 @@ bits = genRandomBits(random, numBits)
 # bits = {0:0,1:0,2:0,3:0,4:0,5:1,6:0,7:0}
 #################################################################
 
-names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
+#names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
+i = ("MQ2")
+# parameterlst, score = geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, sensorData,
+#                trialTimes, i, pd,  datetime)
 
-for i in names:
-    # parameterlst, score = geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, sensorData,
-    #                trialTimes, i, pd,  datetime)
-    
-    parameterlst = getNeighbors(bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expectedChange, windowSize, sensorData,
-                trialTimes, i, pd,  datetime)
-    
-    #parameterdf = parameterdf.append(parameterlst)
-    
-    break
-    
+getNeighbors(bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expectedChange, windowSize, sensorData,
+            trialTimes, i, pd,  datetime, genCSV)
 
-parameterdf.columns = ['triggerSensor','Threshold', 'Expected', 'True', 'False', 'Score']
-paraCSV = (outputDir, today + 'score.csv')
-paraCSV = "\\".join(paraCSV)
-parameterdf.to_csv(paraCSV,index=False)
+#parameterdf = parameterdf.append(parameterlst)
+
+# parameterdf.columns = ['triggerSensor','Threshold', 'Expected', 'True', 'False', 'Score']
+# paraCSV = (outputDir, today + 'score.csv')
+# paraCSV = "\\".join(paraCSV)
+# parameterdf.to_csv(paraCSV,index=False)
