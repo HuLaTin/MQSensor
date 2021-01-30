@@ -359,7 +359,8 @@ def geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, senso
         print("True: " + str(eventsTrue))
         print("False: " + str(eventsFalse))
     
-    score = eventsTrue / (expectedEvents * (eventsFalse + 1))
+    # score = eventsTrue / (expectedEvents * (eventsFalse + 1))
+    score = (eventsTrue * 1.1) / (expectedEvents + eventsFalse)
     print("expectedChange: " + str(expectedChange))
     print("score: " + str(score))
     
@@ -369,6 +370,9 @@ def geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, senso
     return(score)
 
 def genRandomBits(random, numBits):
+    '''
+    Returns dictionary with random bits
+    '''
     bits = dict()
     for i in range(numBits):
         if random.random() > 0.5:
@@ -377,24 +381,43 @@ def genRandomBits(random, numBits):
             bits[i] = 0
     return(bits)
 
+def newLowest(score,value,bits):
+    print("********\n********\n********")
+    print("Score:" + str(score))
+    print("Value:" + str(value))
+    print("Bits:"+str(bits))
+    
+def flipBit(num):
+    '''
+    1s becomes 0s, 0s becomes 1s
+    '''
+    if num == 1:
+        num = 0
+    else:
+        num = 1
+    return num
+
 def getValueOfBits(bits,min,max):
+    '''
+    takes dictionary of bits, and converts to a number between min and max
+    '''
     x = 0
     for i in bits:
         x += (2**i)*bits[i]
     # Gets the percentage of 0-1023, converts to a %, and returns the number equal to the percent between min and max
-    return((((x/255)*100) * (max - min) / 100) + min)
+    return((((x/1023)*100) * (max - min) / 100) + min)
 
 def getNeighbors( bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expectedChange, windowSize, sensorData,
                 trialTimes, l, pd,  datetime):
+    '''
+    
+    '''
     # Returns a dict where the key is the bit of bits that was flipped, the value is the cost of the resulting dict (from the flipped bit)
     neighborBitsCost = bits.copy()
     parameterlst = 0
     x = int()
     for i in neighborBitsCost:
-        if neighborBitsCost[i] == 1:
-            neighborBitsCost[i] = 0
-        else:
-            neighborBitsCost[i] = 1
+        neighborBitsCost[i] = flipBit(neighborBitsCost[i])
         expectedChange = getValueOfBits(neighborBitsCost, bitMinValue, bitMaxValue)
         x = geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, sensorData,
                     trialTimes, l, pd,  datetime)
@@ -406,13 +429,16 @@ def getNeighbors( bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expect
         if neighborBitsCost[j] >= bestScore:
             bestScore = neighborBitsCost[j]
             bestBits = bits.copy()
-            if bestBits[j] == 1:
-                bestBits[j] = 0
-            else:
-                bestBits[j] = 1
+            bestBits[j] = flipBit(bestBits[j])
             print(bestBits)
-            print(getValueOfBits(bestBits, bitMinValue, bitMaxValue))
-            print(bestScore)
+            print("Flipped bit: " + str(j))
+            print("Value - " + str(getValueOfBits(bestBits, bitMinValue, bitMaxValue)))
+            print("Best score = " + str(bestScore))
     getNeighbors(bitMinValue, bitMaxValue, bestBits, expectedEvents, scaler, expectedChange, windowSize, sensorData,
                 trialTimes, l, pd,  datetime)
     return (parameterlst)
+
+# class bitFlipping:    
+#     def __init__(numOfBits,min,max):
+#         self.numOfBits = numOfBits
+        

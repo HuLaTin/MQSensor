@@ -24,7 +24,7 @@ today = today.strftime("%Y%b%d")
 # Our scaler for the min/max normalization
 scaler=MinMaxScaler()
 
-bitMinValue = 0.001
+bitMinValue = 0.05
 bitMaxValue = .5
 
 
@@ -33,7 +33,7 @@ expectedChange = float(.1)
 windowSize = int(50)
 
 score = 0
-numBits = 8
+numBits = 10
 
 # creating a dataframe to store useful counts 
 parameterdf = pd.DataFrame()
@@ -81,6 +81,7 @@ trialTimes = trialTimes.reset_index(drop=True)
 expectedEvents = len(trialTimes)
 
 bits = genRandomBits(random, numBits)
+# bits = {0:0,1:0,2:0,3:0,4:0,5:1,6:0,7:0}
 #################################################################
 
 names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
