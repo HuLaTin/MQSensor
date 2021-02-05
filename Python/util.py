@@ -290,14 +290,13 @@ def checkForOutliers(chems, eventsTrim, math, pd, stat, sdThresh):
 
     return outliers
 
-def geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, sensorData,
+def geneticMutateScore(bitMaxValue, expectedEvents, scaler, expectedChange, windowSize, sensorData,
                    trialTimes, i, pd,  datetime):
     '''
     '''
     #triggerSensor = i
-    eventName = (str(i), "ADC")
-    # .join works similar to paste function
-    i = eventName = "_".join(eventName)
+    eventName = i
+    i = eventName
     
     # applying scaler to column "i" (sensor column)
     sensorData["ADC_N"] = scaler.fit_transform(sensorData[[i]])
@@ -360,7 +359,8 @@ def geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, senso
         print("False: " + str(eventsFalse))
     
     # score = eventsTrue / (expectedEvents * (eventsFalse + 1))
-    score = (eventsTrue * 1.1) / (expectedEvents + eventsFalse)
+    smallNumber = (bitMaxValue - expectedChange) / 10
+    score = ((eventsTrue * 1.1) / (expectedEvents + eventsFalse)) + smallNumber
     print("expectedChange: " + str(expectedChange))
     print("score: " + str(score))
     
@@ -428,7 +428,7 @@ def getNeighbors( bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expect
     for i in neighborBitsCost:
         neighborBitsCost[i] = flipBit(neighborBitsCost[i])
         expectedChange = getValueOfBits(neighborBitsCost, bitMinValue, bitMaxValue)
-        x, eventsTrue, eventsFalse = geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, sensorData,
+        x, eventsTrue, eventsFalse = geneticMutateScore(bitMaxValue, expectedEvents, scaler, expectedChange, windowSize, sensorData,
                     trialTimes, l, pd,  datetime)
         # x = getValueOfBits(neighborBitsCost,bitMinValue, bitMaxValue)
         neighborBitsCost[i] = x
@@ -443,7 +443,7 @@ def getNeighbors( bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expect
             print("Flipped bit: " + str(j))
             print("Value - " + str(getValueOfBits(bestBits, bitMinValue, bitMaxValue)))
             print("Best score = " + str(bestScore))
-            genScoring = [l, expectedChange, eventsTrue, eventsFalse, bestScore]
+            genScoring = [l, (str(bitMinValue) + " - " + str(bitMaxValue)), float(expectedChange), int(eventsTrue), int(eventsFalse), float(bestScore), str(bestBits)]
             scoringCSV(genScoring, genCSV, pd)
     getNeighbors(bitMinValue, bitMaxValue, bestBits, expectedEvents, scaler, expectedChange, windowSize, sensorData,
                 trialTimes, l, pd,  datetime, genCSV)

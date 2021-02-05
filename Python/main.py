@@ -51,8 +51,8 @@ eventsTrim = None
 sdThresh = 0
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\Joulesv2_20201208_SL.csv')
-trialTimes = pd.read_csv(r'Python\Data\V2TrialTimes.csv')
+sensorData = pd.read_csv(r'Python\Data\ThruFeb02GasStream.csv')
+trialTimes = pd.read_csv(r'Python\Data\TrialTimes-Joules.csv')
 
 # pickleJar import
 # sensorData = pd.read_csv(r'Python\Data\pickleJar\sensorData.csv)
@@ -124,7 +124,7 @@ if useMovingAvg == True:
 # creates list of columns that will be used as the "trigger" for determining events
 names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
 
-#uses function on each signal
+# uses function on each signal
 ################## CHECK INDEXING #############################
 for i in names:
     #input and output for function

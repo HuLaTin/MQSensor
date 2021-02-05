@@ -1,6 +1,7 @@
 # Import libraries
 import sys
-import os
+import os.path
+from os import path
 from numpy.core.numeric import NaN
 from numpy.lib.function_base import append
 import pandas as pd
@@ -21,28 +22,21 @@ outputDir = "\\".join(outputDir)
 today = date.today()
 today = today.strftime("%Y%b%d")
 
-genColNames = ["sensor", "expectedChange", "True", "False", "bestScore"]
-geneticScoring = ["0", "0", "0", "0", "0"]
+genColNames = ["sensor", "range", "expectedChange", "True", "False", "bestScore", "bestBits"]
+geneticScoring = ["0", "0", "0", "0", "0", "0", "0"]
 geneticScoring = pd.DataFrame(geneticScoring).T
 geneticScoring.columns = genColNames
 genCSV = (outputDir, "mutation" ,today + '_geneticScore.csv')
 genCSV = "\\".join(genCSV)
-#geneticScoring.to_csv(genCSV, index=False)
+
+# so that we don't write over with a blank .CSV
+# also creates one if it doesn't exist
+if path.exists(genCSV) == False:
+    geneticScoring.to_csv(genCSV, index=False)
 
 
 # Our scaler for the min/max normalization
 scaler=MinMaxScaler()
-
-bitMinValue = 0.07
-bitMaxValue = .25
-
-
-# desired threshold of change that determines if events occured
-expectedChange = float(.1)
-windowSize = int(50)
-
-score = 0
-numBits = 10
 
 # creating a dataframe to store useful counts 
 parameterdf = pd.DataFrame()
@@ -52,8 +46,8 @@ parameterlst = []
 events = None
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\Joulesv2_20201208_SL.csv')
-trialTimes = pd.read_csv(r'Python\Data\V2TrialTimes.csv')
+sensorData = pd.read_csv(r'Python\Data\ThruFeb02GasStream.csv')
+trialTimes = pd.read_csv(r'Python\Data\TrialTimes-Joules.csv')
 
 # renames chemicals in "trialTimes", adds a number at end for easier identification
 for x in range(0, len(trialTimes)):
@@ -89,21 +83,20 @@ trialTimes = trialTimes.reset_index(drop=True)
 
 expectedEvents = len(trialTimes)
 
-bits = genRandomBits(random, numBits)
+numBits = 10
+
+bitMinValue = 0.05
+bitMaxValue = .3
 # bits = {0:0,1:0,2:0,3:0,4:0,5:1,6:0,7:0}
-#################################################################
+bits = genRandomBits(random, numBits)
 
-#names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
-i = ("MQ2")
-# parameterlst, score = geneticMutateScore(expectedEvents, scaler, expectedChange, windowSize, sensorData,
-#                trialTimes, i, pd,  datetime)
+# desired threshold of change that determines if events occured
+expectedChange = float(.1)
+windowSize = int(50)
+score = 0
 
+i = ("MQ2_ADC")
+
+# this is a recursive funtion
 getNeighbors(bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expectedChange, windowSize, sensorData,
             trialTimes, i, pd,  datetime, genCSV)
-
-#parameterdf = parameterdf.append(parameterlst)
-
-# parameterdf.columns = ['triggerSensor','Threshold', 'Expected', 'True', 'False', 'Score']
-# paraCSV = (outputDir, today + 'score.csv')
-# paraCSV = "\\".join(paraCSV)
-# parameterdf.to_csv(paraCSV,index=False)
