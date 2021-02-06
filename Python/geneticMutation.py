@@ -85,8 +85,8 @@ expectedEvents = len(trialTimes)
 
 numBits = 10
 
-bitMinValue = 0.05
-bitMaxValue = .3
+bitMinValue = 0.1
+bitMaxValue = .15
 # bits = {0:0,1:0,2:0,3:0,4:0,5:1,6:0,7:0}
 bits = genRandomBits(random, numBits)
 
