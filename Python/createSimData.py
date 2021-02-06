@@ -1,3 +1,10 @@
+#####################
+###  HUNTER TINER ###
+#####################
+## HuLaTin @ GMAIL ##
+#####################
+
+
 import os
 import pandas as pd
 import numpy as np
