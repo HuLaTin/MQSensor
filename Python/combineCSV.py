@@ -1,3 +1,9 @@
+#####################
+###  HUNTER TINER ###
+#####################
+## HuLaTin @ GMAIL ##
+#####################
+
 from numpy.core.numeric import tensordot
 import pandas as pd
 from pandas.core.frame import DataFrame
