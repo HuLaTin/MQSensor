@@ -34,9 +34,10 @@ today = today.strftime("%Y%b%d")
 # Our scaler for the min/max normalization
 scaler=MinMaxScaler()
 
-# desired threshold of change that determines if events occured
-expectedChange = float(.1)
-windowSize = int(50)
+timeIndex = pd.DataFrame(columns=['start', 'end'])
+
+preWindow = int(5)
+postWindow = int(45)
 
 # location of datafiles, readings and times of known experiments
 # if importing from github - use pickleJar.py to extract the data for use here
@@ -61,6 +62,13 @@ sensorData.columns = ("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
 del sensorData['CPU_Load']
 del sensorData['Throttled']
 
+# for dropping rows that contain no time stamp
+diff = len(sensorData)
+sensorData['Time'].replace('', np.nan, inplace=True)
+sensorData.dropna(subset=['Time'], inplace=True)
+sensorData = sensorData.reset_index(drop=True)
+print(diff - len(sensorData))
+
 # sets our 'Time" columns to a datetime format
 sensorData['Time'] = pd.to_datetime(sensorData['Time'], format='%Y-%m-%d %H:%M:%S.%f')
 trialTimes['Time'] = pd.to_datetime(trialTimes['Time'], format='%Y-%m-%d %H:%M:%S.%f')
@@ -84,9 +92,32 @@ trialTimes = trialTimes.reset_index(drop=True)
 
 # creates a list of chemicals seen in "trialTimes"
 chems = np.unique(trialTimes["Chemical"])
+len(trialTimes)
+eventCounter = 0
+
+fmt = '%Y-%m-%d %H:%M:%S'
+trialTimes['Time'] = trialTimes['Time'].astype('datetime64[s]')
+sensorData['Time'] = sensorData['Time'].astype('datetime64[s]')
 
 for i in range(len(trialTimes)):
-    print(i)
+    for j in range(len(sensorData)):
+        tDelta = datetime.strptime(str(trialTimes.loc[i,'Time']),fmt) - datetime.strptime(str(sensorData.loc[j,'Time']),fmt)
+        tDelta = tDelta.total_seconds()/60
+        if abs(tDelta) <= .75:
+            eventCounter = eventCounter + 1
+            trialTimes.loc[i,'Time']
+            sensorData.loc[j,'Time']
+            print(str(abs(eventCounter - len(trialTimes))) , " - events let to collect")
+            timeIndex.loc[i,'start'] = j - preWindow
+            timeIndex.loc[i,'end'] = j + postWindow
+
+            
+            break
+
+
+
+timeIndex
+
 
 # for l in range(0, len(trialTimes)):
 #     for m in range(0, len(timeIndex)):
