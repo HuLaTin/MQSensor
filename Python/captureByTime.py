@@ -36,8 +36,9 @@ scaler=MinMaxScaler()
 
 timeIndex = pd.DataFrame(columns=['start', 'end'])
 
-preWindow = int(5)
-postWindow = int(45)
+preWindow = int(4)
+postWindow = int(46)
+windowSize = preWindow + postWindow
 
 # location of datafiles, readings and times of known experiments
 # if importing from github - use pickleJar.py to extract the data for use here
@@ -49,7 +50,7 @@ random.seed(datetime.now())
 
 # renames chemicals in "trialTimes", adds a number at end for easier identification
 for x in range(0, len(trialTimes)):
-    chemName = (trialTimes.loc[x, "Chemical"], str(x+1))
+    chemName = (trialTimes.loc[x, "Chemical"].strip(), str(x+1))
     trialTimes.loc[x, "Chemical"] = "-".join(chemName)
     
 # rename columns in "sensorData"
@@ -107,24 +108,75 @@ for i in range(len(trialTimes)):
             eventCounter = eventCounter + 1
             trialTimes.loc[i,'Time']
             sensorData.loc[j,'Time']
-            print(str(abs(eventCounter - len(trialTimes))) , " - events let to collect")
+            print(str(abs(eventCounter - len(trialTimes))) , " - events left to collect")
             timeIndex.loc[i,'start'] = j - preWindow
             timeIndex.loc[i,'end'] = j + postWindow
 
             
             break
+        
+eventNumber = 1
+# initialize dataframe
+# stores columns between rows where an event was determined to have occured
+eventsCaptured = sensorData.iloc[timeIndex.loc[0,'start']:timeIndex.loc[0,'end'],0:12]
 
+while 1:
+        dataToAppend = sensorData.iloc[timeIndex.loc[eventNumber,'start']:timeIndex.loc[eventNumber,'end'],0:12]
+        eventsCaptured = eventsCaptured.append(dataToAppend)
+        
+        if eventNumber == len(timeIndex)-1:
+            break
+        eventNumber = eventNumber + 1
+        
+eventsCaptured = eventsCaptured.reset_index(drop=True)
 
+# new empty dataframes
+eventTemp = pd.DataFrame()
+events = pd.DataFrame()
 
-timeIndex
+# determines number of total events
+numEvents = len(trialTimes)
+windowSize = preWindow + postWindow
 
+# breaks down "eventsCaptured" into each event
+# using melt function
+for eventNum in range(1, numEvents + 1):
+    eventStart = (windowSize * (eventNum - 1))
+    eventStop = (windowSize * eventNum)
+    eventTemp = pd.DataFrame(eventsCaptured.iloc[eventStart:eventStop,:])    
+    eventTemp.insert(0, "num", range(1, len(eventTemp)+1))
+    eventTemp = pd.melt(eventTemp, id_vars=['Time', 'num'])
+    # TEST used in trying to determine outliers    
+    
+    events = pd.concat([events, eventTemp.iloc[:,3]], axis=1)
+    
+# new empty column
+events['name'] = None
 
-# for l in range(0, len(trialTimes)):
-#     for m in range(0, len(timeIndex)):
-#         tDelta = datetime.strptime(str(trialTimes.loc[l,'Time']),fmt) - datetime.strptime(str(timeIndex.loc[m, 'Time']),fmt)
-#         tDelta = tDelta.total_seconds()/60
-#         timeIndex.loc[m, 'timeDiff'] = tDelta
-#         if abs(timeIndex.loc[m, 'timeDiff']) <= 5:
-#             events.loc[m, 'timeStamp'] = trialTimes.loc[l, 'Chemical']
-#             events.loc[m, 'ident'] = 1
-#             break
+# finds index of columns
+c = eventTemp.columns.get_loc('variable')
+d = eventTemp.columns.get_loc('num')
+
+# used to rename columns so we can see time point/signal
+for b in range(0, len(eventTemp)):
+    var = eventTemp.iloc[b,c]
+    num = eventTemp.iloc[b,d]
+    eventLabel = (str(var),str(num))
+    events.loc[b,"name"] = "_".join(eventLabel)
+    
+# names events with number
+# seems redundant?
+for b in range(0, len(trialTimes)):
+    colLabel = trialTimes.loc[b,'Chemical']
+    events.columns.values[b] = colLabel
+    
+# transpose/flips dataframe
+events = events.T
+# renames columns using values contained in 'name' row
+events = events.rename(columns = events.loc['name',])
+# drop that useless row!
+events = events.drop(index = 'name')
+
+byTimeCSV = (outputDir, today + '_captureByTime.csv')
+byTimeCSV = "\\".join(byTimeCSV)
+events.to_csv(byTimeCSV,index=True)

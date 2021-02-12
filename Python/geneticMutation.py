@@ -91,8 +91,8 @@ expectedEvents = len(trialTimes)
 
 numBits = 10
 
-bitMinValue = 0.1
-bitMaxValue = .15
+bitMinValue = 0.05
+bitMaxValue = .9
 # bits = {0:0,1:0,2:0,3:0,4:0,5:1,6:0,7:0}
 bits = genRandomBits(random, numBits)
 
@@ -101,7 +101,7 @@ expectedChange = float(.1)
 windowSize = int(50)
 score = 0
 
-i = ("MQ2_ADC")
+i = ("MQ5_ADC")
 
 # this is a recursive funtion
 getNeighbors(bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expectedChange, windowSize, sensorData,

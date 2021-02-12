@@ -122,7 +122,7 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
     
     # finds index of columns
     c = eventTemp.columns.get_loc('variable')
-    d = eventTemp.columns.get_loc('value')
+    d = eventTemp.columns.get_loc('num')
     
     # used to rename columns so we can see time point/signal
     for b in range(0, len(eventTemp)):
@@ -133,7 +133,8 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
         
     # names events with number
     # seems redundant?
-    for b in range(0, len(events.columns)-1):
+    ## CHECK THIS ( previously len()-1 )
+    for b in range(0, len(events.columns)):
         colLabel = (str("Event"), str(b+1))
         events.columns.values[b] = " ".join(colLabel)
         

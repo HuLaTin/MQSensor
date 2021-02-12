@@ -138,9 +138,7 @@ for i in names:
     downsampleData(cwd, pd, today, outputDir, balanceThis, triggerSensor)
     
     parameterdf = parameterdf.append(parameterlst)
-        
-    break
-    
+            
     # If statement
     # Hyperparameterization
 
