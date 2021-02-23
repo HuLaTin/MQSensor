@@ -7,7 +7,7 @@
 # Import libraries
 import sys
 import os
-from numpy.core.numeric import NaN
+from numpy.core.numeric import False_, NaN
 from numpy.lib.function_base import append
 import pandas as pd
 import random
@@ -30,6 +30,9 @@ outputDir = "\\".join(outputDir)
 # set today's date
 today = date.today()
 today = today.strftime("%Y%b%d")
+
+#Chemicals to ignore during downSampling
+to_drop = ['Methyl Benzoate']
 
 # Our scaler for the min/max normalization
 scaler=MinMaxScaler()
@@ -177,6 +180,15 @@ events = events.rename(columns = events.loc['name',])
 # drop that useless row!
 events = events.drop(index = 'name')
 
-byTimeCSV = (outputDir, today + '_captureByTime.csv')
+events = events.reset_index(drop=False)
+
+events.rename(columns={ events.columns[0]: "chemical" }, inplace = True)
+
+# removing a chemical downsampling will create problems
+events = events[~events.chemical.str.contains('|'.join(to_drop))]
+
+byTimeCSV = (outputDir, "captureByTime",today + '_captureByTime.csv')
 byTimeCSV = "\\".join(byTimeCSV)
-events.to_csv(byTimeCSV,index=True)
+events.to_csv(byTimeCSV,index=False)
+
+downsampleData(cwd, pd, today, outputDir, byTimeCSV, "Time")

@@ -143,6 +143,6 @@ for i in names:
     # Hyperparameterization
 
 parameterdf.columns = ['triggerSensor','Threshold', 'Expected', 'True', 'False', 'Total']
-paraCSV = (outputDir, today + '_Parameters.csv')
+paraCSV = (outputDir, "parameters",today + '_Parameters.csv')
 paraCSV = "\\".join(paraCSV)
 parameterdf.to_csv(paraCSV,index=False)

@@ -134,10 +134,9 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
     # names events with number
     # seems redundant?
     ## CHECK THIS ( previously len()-1 )
-    for b in range(0, len(events.columns)):
+    for b in range(0, len(events.columns)-1):
         colLabel = (str("Event"), str(b+1))
         events.columns.values[b] = " ".join(colLabel)
-        
     # transpose/flips dataframe
     events = events.T
     # renames columns using values contained in 'name' row
@@ -189,7 +188,7 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
     #assign(paste("Times", toString(z), sep = "_"), TimeIndex)
     
     # stores parameters for file naming
-    csvParameters = [str(today), str(triggerSensor), str(expectedChange), str(windowSize)]
+    csvParameters = [str(today), str(triggerSensor), str(round(expectedChange,2)), str(windowSize)]
     
     # saves events to .csv
     # use .copy() otherwise it points to the list
