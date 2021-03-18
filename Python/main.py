@@ -36,7 +36,7 @@ today = today.strftime("%Y%b%d")
 scaler=MinMaxScaler()
 
 # desired threshold of change that determines if events occured
-expectedChange = float(.1)
+expectedChange = float(.06)
 windowSize = int(50)
 
 useMovingAvg = False
@@ -51,7 +51,7 @@ eventsTrim = None
 sdThresh = 0
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\ThruFeb02GasStream.csv')
+sensorData = pd.read_csv(r'Python\Data\thru2021March15JoulesGas.csv')
 trialTimes = pd.read_csv(r'Python\Data\TrialTimes-Joules.csv')
 
 # pickleJar import
@@ -135,9 +135,10 @@ for i in names:
     # this checks for outliers, doesn't change data only output to console. (it should anyways...)
     #outliers, = checkForOutliers(chems, eventsTrim, math, pd, stat, sdThresh)
     
-    downsampleData(cwd, pd, today, outputDir, balanceThis, triggerSensor)
+    #downsampleData(cwd, pd, today, outputDir, balanceThis, triggerSensor)
     
     parameterdf = parameterdf.append(parameterlst)
+    #break
             
     # If statement
     # Hyperparameterization

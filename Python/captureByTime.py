@@ -32,7 +32,7 @@ today = date.today()
 today = today.strftime("%Y%b%d")
 
 #Chemicals to ignore during downSampling
-to_drop = ['Methyl Benzoate']
+#to_drop = ['Methyl Benzoate']
 
 # Our scaler for the min/max normalization
 scaler=MinMaxScaler()
@@ -45,7 +45,7 @@ windowSize = preWindow + postWindow
 
 # location of datafiles, readings and times of known experiments
 # if importing from github - use pickleJar.py to extract the data for use here
-sensorData = pd.read_csv(r'Python\Data\ThruFeb02GasStream.csv')
+sensorData = pd.read_csv(r'Python\Data\thru2021March15JoulesGas.csv')
 trialTimes = pd.read_csv(r'Python\Data\TrialTimes-Joules.csv')
 
 # always set random seed!
@@ -185,7 +185,7 @@ events = events.reset_index(drop=False)
 events.rename(columns={ events.columns[0]: "chemical" }, inplace = True)
 
 # removing a chemical downsampling will create problems
-events = events[~events.chemical.str.contains('|'.join(to_drop))]
+#events = events[~events.chemical.str.contains('|'.join(to_drop))]
 
 byTimeCSV = (outputDir, "captureByTime",today + '_captureByTime.csv')
 byTimeCSV = "\\".join(byTimeCSV)
