@@ -293,6 +293,7 @@ def checkForOutliers(chems, eventsTrim, math, pd, stat, sdThresh):
 def geneticMutateScore(bitMaxValue, expectedEvents, scaler, expectedChange, windowSize, sensorData,
                    trialTimes, i, pd,  datetime):
     '''
+    Tommy Haycraft
     '''
     #triggerSensor = i
     eventName = i

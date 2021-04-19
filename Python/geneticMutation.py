@@ -3,6 +3,10 @@
 #####################
 ## HuLaTin @ GMAIL ##
 #####################
+###  TJ Haycraft  ###
+#####################
+### -email@email- ###
+#####################
 
 # Import libraries
 import sys
