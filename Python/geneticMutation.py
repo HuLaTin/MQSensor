@@ -56,8 +56,8 @@ parameterlst = []
 events = None
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\ThruFeb02GasStream.csv')
-trialTimes = pd.read_csv(r'Python\Data\TrialTimes-Joules.csv')
+sensorData = pd.read_csv(r'Python\Data\20200601StriderGasStream.csv')
+trialTimes = pd.read_csv(r'Python\Data\striderTrials.csv')
 
 # renames chemicals in "trialTimes", adds a number at end for easier identification
 for x in range(0, len(trialTimes)):
@@ -65,10 +65,15 @@ for x in range(0, len(trialTimes)):
     trialTimes.loc[x, "Chemical"] = "-".join(chemName)
     
 # rename columns in "sensorData"
+#sensorData.columns = ("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
+#                          "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC",
+#                          "Temp_C*", "Gas_ohms", "Humidity",
+#                          "Pressure_pa", "CPU_Load", "Throttled")
+
 sensorData.columns = ("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
                           "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC",
-                          "Temp_C*", "Gas_ohms", "Humidity",
-                          "Pressure_pa", "CPU_Load", "Throttled")
+                          "Temp_C*", "Humidity",  "Gas_ohms",
+                          "Pressure_pa")
 
 # sets our 'Time" columns to a datetime format
 sensorData['Time'] = pd.to_datetime(sensorData['Time'], format='%Y-%m-%d %H:%M:%S.%f')
@@ -96,7 +101,7 @@ expectedEvents = len(trialTimes)
 numBits = 10
 
 bitMinValue = 0.05
-bitMaxValue = .9
+bitMaxValue = .5
 # bits = {0:0,1:0,2:0,3:0,4:0,5:1,6:0,7:0}
 bits = genRandomBits(random, numBits)
 
@@ -105,7 +110,7 @@ expectedChange = float(.1)
 windowSize = int(50)
 score = 0
 
-i = ("MQ5_ADC")
+i = ("MQ2_ADC")
 
 # this is a recursive funtion
 getNeighbors(bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expectedChange, windowSize, sensorData,

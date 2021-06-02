@@ -8,7 +8,7 @@
 import sys
 import os
 from numpy.core.numeric import NaN
-from numpy.lib.function_base import append
+from numpy.lib.function_base import append, average
 import pandas as pd
 import random
 from datetime import datetime, date
@@ -51,8 +51,8 @@ eventsTrim = None
 sdThresh = 0
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\thru2021March15JoulesGas.csv')
-trialTimes = pd.read_csv(r'Python\Data\TrialTimes-Joules.csv')
+sensorData = pd.read_csv(r'Python\Data\20200601StriderGasStream.csv')
+trialTimes = pd.read_csv(r'Python\Data\striderTrials.csv')
 
 # pickleJar import
 # sensorData = pd.read_csv(r'Python\Data\pickleJar\sensorData.csv)
@@ -67,14 +67,21 @@ for x in range(0, len(trialTimes)):
     trialTimes.loc[x, "Chemical"] = "-".join(chemName)
     
 # rename columns in "sensorData"
+#sensorData.columns = ("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
+#                          "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC",
+#                          "Temp_C*", "Gas_ohms", "Humidity",
+#                          "Pressure_pa", "CPU_Load", "Throttled")
+
 sensorData.columns = ("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
                           "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC",
-                          "Temp_C*", "Gas_ohms", "Humidity",
-                          "Pressure_pa", "CPU_Load", "Throttled")
+                          "Temp_C*", "Humidity",  "Gas_ohms",
+                          "Pressure_pa")
+
+
 
 # drops two columns that aren't useful in this application
-del sensorData['CPU_Load']
-del sensorData['Throttled']
+#del sensorData['CPU_Load']
+#del sensorData['Throttled']
 
 # for dropping rows that contain no time stamp
 # not currently being used
@@ -120,9 +127,21 @@ if useMovingAvg == True:
     # This program is not designed to use this "smoothed" data
     sys.exit("A new file has been created!")
     
+tDeltaCheck = sensorData.loc[:100,"Time"].astype(np.int64)
+tDeltaList = []
+for i in range(1, len(tDeltaCheck)):
+  tDeltaList.insert(i, (tDeltaCheck[i] - tDeltaCheck[i-1]))
+tDAvg = stat.mean(tDeltaList) / 1e9
+
+print("Average timeDelta between readings - ", tDAvg, " seconds.")
+
+if tDAvg <= 60:
+    print("Readings taken less than a minute apart.")
+    #remove alternate lines?
 
 # creates list of columns that will be used as the "trigger" for determining events
 names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
+
 
 # uses function on each signal
 ################## CHECK INDEXING #############################

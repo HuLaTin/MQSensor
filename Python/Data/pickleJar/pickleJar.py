@@ -18,8 +18,8 @@ outputDir = (cwd, outputDir)
 outputDir = "\\".join(outputDir)
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\thru2021March15JoulesGas.csv')
-trialTimes = pd.read_csv(r'Python\Data\TrialTimes-Joules.csv')
+sensorData = pd.read_csv(r'Python\Data\20200601StriderGasStream.csv')
+trialTimes = pd.read_csv(r'Python\Data\striderTrials.csv')
 
 pickle.dump(sensorData, open( outputDir + "sensorData.p", "wb" ) )
 pickle.dump(trialTimes, open( outputDir + "trialTimes.p", "wb" ) )

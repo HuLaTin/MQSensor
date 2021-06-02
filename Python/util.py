@@ -250,6 +250,7 @@ def downsampleData(cwd, pd, today, outputDir, balanceThis, triggerSensor):
     
     # saves to csv
     chemEvents.to_csv(dsCSV,index=False)
+    return chemEvents
     
     
 def checkForOutliers(chems, eventsTrim, math, pd, stat, sdThresh):
