@@ -457,4 +457,4 @@ def getNeighbors( bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expect
 # class bitFlipping:    
 #     def __init__(numOfBits,min,max):
 #         self.numOfBits = numOfBits
-        
+#        
