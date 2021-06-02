@@ -410,6 +410,7 @@ def flipBit(num):
 def getValueOfBits(bits,min,max):
     '''
     takes dictionary of bits, and converts to a number between min and max
+    will only work with 10 bits
     '''
     x = 0
     for i in bits:
@@ -424,21 +425,23 @@ def getNeighbors( bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expect
     '''
     # Returns a dict where the key is the bit of bits that was flipped, the value is the cost of the resulting dict (from the flipped bit)
     neighborBitsCost = bits.copy()
+    neighborBitsScore = bits.copy()
     eventsTrue = 0
     eventsFalse = 0
-    x = int()
+    score = float()
     for i in neighborBitsCost:
         neighborBitsCost[i] = flipBit(neighborBitsCost[i])
         expectedChange = getValueOfBits(neighborBitsCost, bitMinValue, bitMaxValue)
-        x, eventsTrue, eventsFalse = geneticMutateScore(bitMaxValue, expectedEvents, scaler, expectedChange, windowSize, sensorData,
+        score, eventsTrue, eventsFalse = geneticMutateScore(bitMaxValue, expectedEvents, scaler, expectedChange, windowSize, sensorData,
                     trialTimes, l, pd,  datetime)
         # x = getValueOfBits(neighborBitsCost,bitMinValue, bitMaxValue)
-        neighborBitsCost[i] = x
+        neighborBitsScore[i] = score
+        neighborBitsCost[i] = flipBit(neighborBitsCost[i])
     bestScore = 0
     bestBits = dict()
-    for j in neighborBitsCost:
-        if neighborBitsCost[j] >= bestScore:
-            bestScore = neighborBitsCost[j]
+    for j in neighborBitsScore:
+        if neighborBitsScore[j] >= bestScore:
+            bestScore = neighborBitsScore[j]
             bestBits = bits.copy()
             bestBits[j] = flipBit(bestBits[j])
             print(bestBits)
