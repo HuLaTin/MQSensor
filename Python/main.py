@@ -36,8 +36,10 @@ today = today.strftime("%Y%b%d")
 scaler=MinMaxScaler()
 
 # desired threshold of change that determines if events occured
-expectedChange = float(.06)
 windowSize = int(50)
+sRun = 3
+futureAvg = 1
+expectedChange = .1
 
 useMovingAvg = False
 
@@ -148,7 +150,7 @@ names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
 for i in names:
     #input and output for function
     events, eventsTrim, parameterlst, sdThresh, balanceThis, triggerSensor \
-        = eventDetection(today, scaler, expectedChange, windowSize, sensorData,
+        = eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, windowSize, sensorData,
                    trialTimes, outputDir, i, pd, NaN, datetime)
         
     # this checks for outliers, doesn't change data only output to console. (it should anyways...)
@@ -162,7 +164,7 @@ for i in names:
     # If statement
     # Hyperparameterization
 
-parameterdf.columns = ['triggerSensor','Threshold', 'Expected', 'True', 'False', 'Total']
+parameterdf.columns = ['triggerSensor', 'sRun', 'futureAvg', 'Threshold', 'Expected', 'True', 'False', 'Total']
 paraCSV = (outputDir, "parameters",today + '_Parameters.csv')
 paraCSV = "\\".join(paraCSV)
 parameterdf.to_csv(paraCSV,index=False)

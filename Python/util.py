@@ -23,7 +23,7 @@ def movingAvg(sensorData, stat):
     return sensorData
     
 
-def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
+def eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, windowSize, sensorData,
                    trialTimes, outputDir, i, pd, NaN, datetime):
     """
     Function used to detect, capture, identify, and save events
@@ -32,37 +32,47 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
     eventName = (str(i), "ADC")
     # .join works similar to paste function
     i = eventName = "_".join(eventName)
-    
+
     # applying scaler to column "i" (sensor column)
     sensorData["ADC_N"] = scaler.fit_transform(sensorData[[i]])
-    
+
     # creates new columns
     # first value in "Change" is 0   
-    sensorData.loc[0, "Change"] = 0
-    sensorData['Event'] = None
-    
+    sensorData["sRun"] = 0
+    sensorData["sRun-Delta"] = 0
+    sensorData["futureAverage"] = 0
+    sensorData["Change"] = 0
+    sensorData["future-past"] = 0
+    sensorData["Event"] = None
+
     # determines change between each timepoint of normalized data column
-    ######################
-    # do we need this -1??
-    for z in range(1, len(sensorData)-1):
-        sensorData.loc[z, "Change"] = sensorData.loc[z, "ADC_N"] - sensorData.loc[z-1, "ADC_N"]
-    
+    for z in range(sRun, len(sensorData)-futureAvg):
+        #sensorData.loc[z, "Z-2"] = stat.mean(sensorData.loc[z-2:z, i])
+        #sensorData.loc[z, "Z-1"] = stat.mean(sensorData.loc[z-1:z, i])
+        
+        sensorData.loc[z, "sRun"] = stat.mean(sensorData.loc[z-sRun:z-1, 'ADC_N'])
+        sensorData.loc[z, "futureAverage"] = stat.mean(sensorData.loc[z:z+futureAvg, 'ADC_N'])
+        sensorData.loc[z, "future-past"] = sensorData.loc[z, "futureAverage"] - sensorData.loc[z, "sRun"]
+        #sensorData.loc[z, 'sRun-Delta'] = sensorData.loc[z, 'ADC_N'] - sensorData.loc[z, 'sRun']
+        #sensorData.loc[z, 'Change'] = sensorData.loc[z, 'ADC_N'] - sensorData.loc[z-1, 'ADC_N']
+        
     # creation of empty dataframes containing these columns           
     eventIndex = pd.DataFrame(columns=['start', 'end'])
     timeIndex = pd.DataFrame(columns=['Time'])
+
     # initialize counter and set starting values
     subsetCounter = 0
     # test without these lines of code?
     eventIndex.loc[0,'start'] = 0
     eventIndex.loc[0,'end'] = 0
     sdThresh = 0
-    
+
     # finding events
     ######################
     # do we need this -1??        
-    for z in range(0, len(sensorData)-1):
+    for z in range(2, len(sensorData)):
         # if change is greater than expectedChange / "Event" is True
-        if sensorData.loc[z, "Change"] > expectedChange:
+        if sensorData.loc[z, "future-past"] >= expectedChange:
             sensorData.loc[z, "Event"] = "True"
             # checks to make sure we dont run out of the dataframe
             # store start/end times of events
@@ -74,13 +84,36 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
         else:
             # otherwise "False"
             sensorData.loc[z,'Event'] = "False"
-    
-    
+            
+
+    eventIndex["flag"] = 'False'
+    timeIndex["flag"] = 'False'
+    z = 0
+    while(True):
+    #for z in range(len(eventIndex)-1):
+        start = eventIndex.loc[z, 'start']
+        end = eventIndex.loc[z, 'end']
+        for x in range(z+1, len(eventIndex)):
+            if eventIndex.loc[x, 'start'] > start and end < eventIndex.loc[x, 'end']:
+                if eventIndex.loc[x, 'start'] - start <= windowSize:
+                    eventIndex.loc[x, "flag"] = 'True'
+                    timeIndex.loc[x, "flag"] = 'True'
+                    # need to remove event from timeIndex
+        #print(eventIndex)
+        eventIndex = eventIndex[eventIndex['flag'].str.contains('False')]
+        timeIndex = timeIndex[timeIndex['flag'].str.contains('False')]
+        eventIndex = eventIndex.reset_index(drop=True)
+        timeIndex = timeIndex.reset_index(drop=True)
+
+        if z == len(eventIndex)-1:
+            break
+        z = z + 1
+
     eventNumber = 1
     # initialize dataframe
     # stores columns between rows where an event was determined to have occured
     eventsCaptured = sensorData.iloc[eventIndex.loc[0,'start']:eventIndex.loc[0,'end'],0:12]
-    
+
     # infinite loop
     # continues appending data of captured events
     while 1:
@@ -96,11 +129,11 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
     #####################################
     # check if we can normalize all columns?
     #####################################
-    
+
     # new empty dataframes
     eventTemp = pd.DataFrame()
     events = pd.DataFrame()
-    
+
     # determines number of total events
     numEvents = int(len(eventsCaptured)/windowSize)
 
@@ -119,11 +152,11 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
 
     # new empty column
     events['name'] = None
-    
+
     # finds index of columns
     c = eventTemp.columns.get_loc('variable')
     d = eventTemp.columns.get_loc('num')
-    
+
     # used to rename columns so we can see time point/signal
     for b in range(0, len(eventTemp)):
         var = eventTemp.iloc[b,c]
@@ -143,22 +176,22 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
     events = events.rename(columns = events.loc['name',])
     # drop that useless row!
     events = events.drop(index = 'name')    
-    
+
     # set time format    
     timeIndex['Time'] = pd.to_datetime(timeIndex['Time'], format='%Y-%m-%d %H:%M:%S.%f')
-    
+
     timeIndex['timeDiff'] = 0
     events['ident'] = int(0)
-    
+
     events.insert(0,'timeStamp','')    
     c = events.columns.get_loc("timeStamp")
         
     for b in range(0, len(events)):
         eTime = (str(timeIndex.iloc[b,0]), "Event")        
         events.iloc[b,c] = " ".join(eTime)
-    
+
     events = events.reset_index(drop = True)
-    
+
     # set format for our time stamps
     fmt = '%Y-%m-%d %H:%M:%S'
     timeIndex['Time'] = timeIndex['Time'].astype('datetime64[s]')
@@ -174,22 +207,22 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
                 events.loc[m, 'timeStamp'] = trialTimes.loc[l, 'Chemical']
                 events.loc[m, 'ident'] = 1
                 break
-    
+
     events = events.rename(columns={"timeStamp" : "chemical"})
 
     # subsets identified events into a new dataframe
     eventsTrim = events[(events.ident == 1)]
     events = events.drop(columns = 'ident')
     eventsTrim = eventsTrim.drop(columns = 'ident')
-    
+
     #someone on stackoverflow said this was bad practice...
     #assign(paste("Index", toString(z), sep = "_"), EventIndex)
     #assign(paste("Captured", toString(z), sep = "_"), eventsCaptured)
     #assign(paste("Times", toString(z), sep = "_"), TimeIndex)
-    
+
     # stores parameters for file naming
     csvParameters = [str(today), str(triggerSensor), str(round(expectedChange,2)), str(windowSize)]
-    
+
     # saves events to .csv
     # use .copy() otherwise it points to the list
     eventName = csvParameters.copy()
@@ -198,7 +231,7 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
     eventOutput = (outputDir, "events", eventName)
     eventOutput = "\\".join(eventOutput)
     events.to_csv(eventOutput,index=False)
-    
+
     # saves eventsTrim to .csv, if dataframe contains an event
     balanceThis = None
     if len(eventsTrim) > 0:
@@ -208,14 +241,14 @@ def eventDetection(today, scaler, expectedChange, windowSize, sensorData,
         eventOutput = (outputDir,"eventsTrim", eventTrimName)
         balanceThis = eventOutput = "\\".join(eventOutput)
         eventsTrim.to_csv(eventOutput,index=False)
-    
+
     # need to check row count here
     # count of expected events
     expectedEvents = len(trialTimes)
     eventsTrue = len(eventsTrim)
     eventsTotal = len(events)
     eventsFalse = (eventsTotal - eventsTrue)
-    parameterlst = [triggerSensor, expectedChange, expectedEvents, eventsTrue, eventsFalse, eventsTotal]
+    parameterlst = [triggerSensor, sRun, futureAvg, expectedChange, expectedEvents, eventsTrue, eventsFalse, eventsTotal]
     parameterlst = pd.DataFrame([parameterlst])
     
     return events, eventsTrim, parameterlst, sdThresh, balanceThis, triggerSensor
