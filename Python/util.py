@@ -221,7 +221,7 @@ def eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, preWind
     #assign(paste("Times", toString(z), sep = "_"), TimeIndex)
 
     # stores parameters for file naming
-    csvParameters = [str(today), str(triggerSensor), str(round(expectedChange,2)), str(windowSize)]
+    csvParameters = [str(today), str(triggerSensor), str(round(expectedChange,2)), str(preWindow+1), str(postWindow)]
 
     # saves events to .csv
     # use .copy() otherwise it points to the list

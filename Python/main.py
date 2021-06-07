@@ -42,7 +42,7 @@ futureAvg = 1
 expectedChange = .1
 
 preWindow = 9
-postWindow = 140
+postWindow = 90
 
 
 windowSize = preWindow + postWindow + 1
