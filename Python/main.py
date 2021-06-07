@@ -36,10 +36,16 @@ today = today.strftime("%Y%b%d")
 scaler=MinMaxScaler()
 
 # desired threshold of change that determines if events occured
-windowSize = int(50)
+#windowSize = int(50)
 sRun = 3
 futureAvg = 1
 expectedChange = .1
+
+preWindow = 9
+postWindow = 140
+
+
+windowSize = preWindow + postWindow + 1
 
 useMovingAvg = False
 
@@ -78,8 +84,6 @@ sensorData.columns = ("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
                           "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC",
                           "Temp_C*", "Humidity",  "Gas_ohms",
                           "Pressure_pa")
-
-
 
 # drops two columns that aren't useful in this application
 #del sensorData['CPU_Load']
@@ -150,7 +154,7 @@ names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
 for i in names:
     #input and output for function
     events, eventsTrim, parameterlst, sdThresh, balanceThis, triggerSensor \
-        = eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, windowSize, sensorData,
+        = eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, preWindow, postWindow, windowSize, sensorData,
                    trialTimes, outputDir, i, pd, NaN, datetime)
         
     # this checks for outliers, doesn't change data only output to console. (it should anyways...)

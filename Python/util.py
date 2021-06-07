@@ -23,7 +23,7 @@ def movingAvg(sensorData, stat):
     return sensorData
     
 
-def eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, windowSize, sensorData,
+def eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, preWindow, postWindow, windowSize, sensorData,
                    trialTimes, outputDir, i, pd, NaN, datetime):
     """
     Function used to detect, capture, identify, and save events
@@ -76,9 +76,9 @@ def eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, windowS
             sensorData.loc[z, "Event"] = "True"
             # checks to make sure we dont run out of the dataframe
             # store start/end times of events
-            if z > 4 and z < (len(sensorData)-(windowSize - 5)):
-                eventIndex.loc[subsetCounter, 'start'] = (z - 4)
-                eventIndex.loc[subsetCounter, 'end'] = (z + (windowSize - 4))
+            if z > preWindow and z < (len(sensorData)-(windowSize - 5)):
+                eventIndex.loc[subsetCounter, 'start'] = (z - preWindow)
+                eventIndex.loc[subsetCounter, 'end'] = (z + (windowSize - preWindow))
                 subsetCounter = (subsetCounter + 1)
                 timeIndex.loc[subsetCounter - 1, 'Time'] = sensorData.loc[z - 1, 'Time' ]
         else:
