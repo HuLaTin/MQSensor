@@ -27,7 +27,10 @@ def eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, preWind
                    trialTimes, outputDir, i, pd, NaN, datetime):
     """
     Function used to detect, capture, identify, and save events
-    """    
+    """
+    #normalize output
+    normColumns = False
+    
     triggerSensor = i
     eventName = (str(i), "ADC")
     # .join works similar to paste function
@@ -98,8 +101,6 @@ def eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, preWind
                 if eventIndex.loc[x, 'start'] - start <= windowSize:
                     eventIndex.loc[x, "flag"] = 'True'
                     timeIndex.loc[x, "flag"] = 'True'
-                    # need to remove event from timeIndex
-        #print(eventIndex)
         eventIndex = eventIndex[eventIndex['flag'].str.contains('False')]
         timeIndex = timeIndex[timeIndex['flag'].str.contains('False')]
         eventIndex = eventIndex.reset_index(drop=True)
@@ -112,12 +113,12 @@ def eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, preWind
     eventNumber = 1
     # initialize dataframe
     # stores columns between rows where an event was determined to have occured
-    eventsCaptured = sensorData.iloc[eventIndex.loc[0,'start']:eventIndex.loc[0,'end'],0:12]
+    eventsCaptured = sensorData.iloc[eventIndex.loc[0,'start']:eventIndex.loc[0,'end'],0:13]
 
     # infinite loop
     # continues appending data of captured events
     while 1:
-        dataToAppend = sensorData.iloc[eventIndex.loc[eventNumber,'start']:eventIndex.loc[eventNumber,'end'],0:12]
+        dataToAppend = sensorData.iloc[eventIndex.loc[eventNumber,'start']:eventIndex.loc[eventNumber,'end'],0:13]
         eventsCaptured = eventsCaptured.append(dataToAppend)
         
         if eventNumber == len(eventIndex)-1:
@@ -136,13 +137,21 @@ def eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, preWind
 
     # determines number of total events
     numEvents = int(len(eventsCaptured)/windowSize)
+    
+    dfCols = list(eventsCaptured.columns.values)
 
     # breaks down "eventsCaptured" into each event
     # using melt function
     for eventNum in range(1, numEvents + 1):
         eventStart = (windowSize * (eventNum - 1))
         eventStop = (windowSize * eventNum)
-        eventTemp = pd.DataFrame(eventsCaptured.iloc[eventStart:eventStop,:])    
+        eventTemp = pd.DataFrame(eventsCaptured.iloc[eventStart:eventStop,:])
+        #####################################################################
+        if normColumns == True:
+            for i in dfCols[1:]:
+                eventTemp[i] = scaler.fit_transform(eventTemp[[i]])                
+        #Normalize here?
+        #####################################################################
         eventTemp.insert(0, "num", range(1, len(eventTemp)+1))
         eventTemp = pd.melt(eventTemp, id_vars=['Time', 'num'])
         # TEST used in trying to determine outliers    

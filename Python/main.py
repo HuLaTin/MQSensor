@@ -36,14 +36,12 @@ today = today.strftime("%Y%b%d")
 scaler=MinMaxScaler()
 
 # desired threshold of change that determines if events occured
-#windowSize = int(50)
 sRun = 3
 futureAvg = 1
 expectedChange = .1
 
 preWindow = 9
 postWindow = 90
-
 
 windowSize = preWindow + postWindow + 1
 
@@ -75,19 +73,19 @@ for x in range(0, len(trialTimes)):
     trialTimes.loc[x, "Chemical"] = "-".join(chemName)
     
 # rename columns in "sensorData"
-#sensorData.columns = ("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
-#                          "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC",
-#                          "Temp_C*", "Gas_ohms", "Humidity",
-#                          "Pressure_pa", "CPU_Load", "Throttled")
-
-sensorData.columns = ("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
+if len(sensorData.columns) == 15:
+    sensorData.columns = ("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
+                          "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC",
+                          "Temp_C*", "Gas_ohms", "Humidity",
+                          "Pressure_pa", "CPU_Load", "Throttled")
+    
+    del sensorData['CPU_Load']
+    del sensorData['Throttled']
+else:
+    sensorData.columns = ("Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
                           "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC",
                           "Temp_C*", "Humidity",  "Gas_ohms",
                           "Pressure_pa")
-
-# drops two columns that aren't useful in this application
-#del sensorData['CPU_Load']
-#del sensorData['Throttled']
 
 # for dropping rows that contain no time stamp
 # not currently being used
@@ -147,7 +145,6 @@ if tDAvg <= 60:
 
 # creates list of columns that will be used as the "trigger" for determining events
 names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
-
 
 # uses function on each signal
 ################## CHECK INDEXING #############################
