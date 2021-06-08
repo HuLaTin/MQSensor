@@ -40,10 +40,14 @@ sRun = 3
 futureAvg = 1
 expectedChange = .1
 
-preWindow = 9
-postWindow = 90
+preWindow = 4
+postWindow = 45
 
 windowSize = preWindow + postWindow + 1
+
+#normalize output?
+normColumns = False
+resample = True
 
 useMovingAvg = False
 
@@ -57,7 +61,7 @@ eventsTrim = None
 sdThresh = 0
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\20200601StriderGasStream.csv')
+sensorData = pd.read_csv(r'Python\Data\thru2021June08StriderGas.csv')
 trialTimes = pd.read_csv(r'Python\Data\striderTrials.csv')
 
 # pickleJar import
@@ -86,6 +90,12 @@ else:
                           "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC",
                           "Temp_C*", "Humidity",  "Gas_ohms",
                           "Pressure_pa")
+    
+sensorData = sensorData[["Time", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC",
+                          "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC",
+                          "Temp_C*", "Humidity",  "Gas_ohms",
+                          "Pressure_pa"]]
+
 
 # for dropping rows that contain no time stamp
 # not currently being used
@@ -118,18 +128,6 @@ trialTimes = trialTimes.reset_index(drop=True)
 
 # creates a list of chemicals seen in "trialTimes"
 chems = np.unique(trialTimes["Chemical"])
-
-# need to troubleshoot
-# if using this, include flag in output?
-if useMovingAvg == True:
-    sensorData = movingAvg(sensorData, stat)
-    
-    movAvgCSV = (outputDir, today + 'MovingAvg.csv')
-    movAvgCSV = "\\".join(movAvgCSV)
-    sensorData.to_csv(movAvgCSV)
-    
-    # This program is not designed to use this "smoothed" data
-    sys.exit("A new file has been created!")
     
 tDeltaCheck = sensorData.loc[:100,"Time"].astype(np.int64)
 tDeltaList = []
@@ -137,11 +135,16 @@ for i in range(1, len(tDeltaCheck)):
   tDeltaList.insert(i, (tDeltaCheck[i] - tDeltaCheck[i-1]))
 tDAvg = stat.mean(tDeltaList) / 1e9
 
+print('\n')
 print("Average timeDelta between readings - ", tDAvg, " seconds.")
+print('\n')
 
-if tDAvg <= 60:
-    print("Readings taken less than a minute apart.")
-    #remove alternate lines?
+if resample == True:
+    if tDAvg <= 60:
+        print("Readings taken less than a minute apart.")
+        sensorData = sensorData.iloc[::2].reset_index(drop = True)
+        #sensorData.iloc[1::2]
+    
 
 # creates list of columns that will be used as the "trigger" for determining events
 names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
@@ -151,19 +154,13 @@ names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
 for i in names:
     #input and output for function
     events, eventsTrim, parameterlst, sdThresh, balanceThis, triggerSensor \
-        = eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, preWindow, postWindow, windowSize, sensorData,
+        = eventDetection(today, scaler, stat, normColumns, sRun, futureAvg, expectedChange, preWindow, postWindow, windowSize, sensorData,
                    trialTimes, outputDir, i, pd, NaN, datetime)
         
     # this checks for outliers, doesn't change data only output to console. (it should anyways...)
     #outliers, = checkForOutliers(chems, eventsTrim, math, pd, stat, sdThresh)
-    
-    #downsampleData(cwd, pd, today, outputDir, balanceThis, triggerSensor)
-    
+        
     parameterdf = parameterdf.append(parameterlst)
-    #break
-            
-    # If statement
-    # Hyperparameterization
 
 parameterdf.columns = ['triggerSensor', 'sRun', 'futureAvg', 'Threshold', 'Expected', 'True', 'False', 'Total']
 paraCSV = (outputDir, "parameters",today + '_Parameters.csv')

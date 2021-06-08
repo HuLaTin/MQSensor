@@ -8,8 +8,8 @@ from numpy.core.numeric import tensordot
 import pandas as pd
 from pandas.core.frame import DataFrame
 
-sensorData1 = pd.read_csv(r'Python\Data\ThruFeb02GasStream.csv', header=None)
-sensorData2 = pd.read_csv(r'Python\Data\2021March15JoulesGas.csv', header=None)
+sensorData1 = pd.read_csv(r'Python\eventsOutput\eventsTrim\Joules-2021Jun08_MQ2_0.1_5_45_EventsTrim.csv', header=0)
+sensorData2 = pd.read_csv(r'Python\eventsOutput\eventsTrim\Strider-resample-2021Jun08_MQ2_0.1_5_45_EventsTrim.csv', header=0)
 
 result1 = sensorData1.append([sensorData2], ignore_index=False)
 # result2 = result1.append([sensorData3], ignore_index=False)
@@ -20,4 +20,4 @@ result1 = sensorData1.append([sensorData2], ignore_index=False)
 
 result1 = result1.iloc[1:]
 
-result1.to_csv('thru2021March15JoulesGas.csv', index = False)
+result1.to_csv('JoulesStriderResampleJune08.csv', index = False)

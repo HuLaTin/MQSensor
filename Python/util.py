@@ -4,33 +4,12 @@
 ## HuLaTin @ GMAIL ##
 #####################
 
-def movingAvg(sensorData, stat):
-    """
-    Function for creation of moving average of sensorData
-    """
-    avgData = sensorData
-    names = list(avgData.columns.values)
-    names.remove('Time')
-
-    for i in names:
-        for b in range(2, len(avgData)-2):
-            startRow = b - 2
-            endRow = b + 2
-            avgData.loc[b,i] = stat.mean(sensorData.loc[startRow:endRow, i])
-            
-    avgData = avgData.loc[2:(len(avgData)-2),:]
-    sensorData = avgData
-    return sensorData
-    
-
-def eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, preWindow, postWindow, windowSize, sensorData,
+def eventDetection(today, scaler, stat, normColumns, sRun, futureAvg, expectedChange, preWindow, postWindow, windowSize, sensorData,
                    trialTimes, outputDir, i, pd, NaN, datetime):
     """
     Function used to detect, capture, identify, and save events
     """
-    #normalize output
-    normColumns = False
-    
+        
     triggerSensor = i
     eventName = (str(i), "ADC")
     # .join works similar to paste function
@@ -231,6 +210,9 @@ def eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, preWind
 
     # stores parameters for file naming
     csvParameters = [str(today), str(triggerSensor), str(round(expectedChange,2)), str(preWindow+1), str(postWindow)]
+    
+    if normColumns == True:
+        csvParameters.append('N')
 
     # saves events to .csv
     # use .copy() otherwise it points to the list
@@ -261,39 +243,6 @@ def eventDetection(today, scaler, stat, sRun, futureAvg, expectedChange, preWind
     parameterlst = pd.DataFrame([parameterlst])
     
     return events, eventsTrim, parameterlst, sdThresh, balanceThis, triggerSensor
-
-def downsampleData(cwd, pd, today, outputDir, balanceThis, triggerSensor):
-    '''
-    used to downsample to balance classes
-    '''
-    # setting output directory
-    outputDir = ('Python\\machineLearning\downsampled')
-    outputDir = (cwd, outputDir)
-    outputDir = "\\".join(outputDir)
-
-    dsName = [str(today), str(triggerSensor), "downsampled.csv"]
-    dsName = "_".join(dsName)
-
-    folderPath = (outputDir, dsName)
-    dsCSV = "\\".join(folderPath)
-
-    # import csv
-    chemEvents = pd.read_csv(balanceThis)
-
-    # split string, selects chemical name (drops the numbering)
-    chemEvents['chemical'] = chemEvents['chemical'].str.split("-").str[0]
-
-    # rename column
-    chemEvents = chemEvents.rename(columns={"chemical": "pred"})
-
-    # groups by class/chemical, downsamples to balance the dataset
-    g = chemEvents.groupby('pred')
-    chemEvents = pd.DataFrame(g.apply(lambda chemEvents: chemEvents.sample(g.size().min()).reset_index(drop=True)))
-    
-    # saves to csv
-    chemEvents.to_csv(dsCSV,index=False)
-    return chemEvents
-    
     
 def checkForOutliers(chems, eventsTrim, math, pd, stat, sdThresh):
     '''
