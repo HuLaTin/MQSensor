@@ -1,16 +1,17 @@
 import numpy as np
 import pandas as pd
 import random, os
+import statistics as stat
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from Python.util import classificationReports
 
 from sklearn.model_selection import StratifiedShuffleSplit
 
 simDataExist = False
+avgColumns = True
 
 chemEvents = pd.read_csv(r'Python\eventsOutput\events\Strider-2021Jun08_MQ2_0.1_10_90_Events.csv')
 #chemSim = pd.read_csv(r'Python\machineLearning\simulated\strider-30-100-2021-06-09_simulatedData.csv'); simDataExist = True
-
 
 # get current working directory
 cwd = os.getcwd()
@@ -33,14 +34,26 @@ loops = 1
 # kmeans = K-Means          || svm = Support Vector Machine
 # pca = Principal Component Analysis
 
-learner = 'tree'
+learner = 'gnb'
 
 # Model Accuracy: how often is the classifier correct?
 # Model Precision: what percentage of positive tuples are labeled as such?
 # Model Recall: what percentage of positive tuples are labelled as such?
 
+if avgColumns == True:
+    
+    colList = ["MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC", "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC",
+                "Temp_C*", "Humidity",  "Gas_ohms", "Pressure_pa"]
+    chemEventsMean = pd.DataFrame()
+    chemEventsMean['chemical'] = chemEvents['chemical']
+    for i in range(len(chemEvents)):
+        for j in colList:
+            chemEventsMean.loc[i, j] = stat.mean(chemEvents.loc[i,chemEvents.filter(like=j).columns])
+    chemEvents = chemEventsMean
+
 # split string, selects chemical name (drops the numbering)
 chemEvents['chemical'] = chemEvents['chemical'].str.split("-").str[0]
+
 # rename column
 chemEvents = chemEvents.rename(columns={"chemical": "pred"})
 
@@ -124,7 +137,7 @@ for i in range(0, len(colList)):
             clf = clf.fit(x_train,y_train)
             y_pred = clf.predict(x_test)
             
-            treeFig = (outputDir, "dTree", str(ignoredCol) + str(x) + '_decisionTree.png')
+            treeFig = (outputDir, "decisionTree", str(ignoredCol) + str(x) + '_decisionTree.png')
             treeFig = "\\".join(treeFig)
 
             fig, axes = plt.subplots(nrows = 1,ncols = 1,figsize = (4,4), dpi=2000)
@@ -141,10 +154,36 @@ for i in range(0, len(colList)):
         # Random Forest Classifier
         if learner == 'randomforestC':
             from sklearn.ensemble import RandomForestClassifier
+            import matplotlib.pyplot as plt
+            import seaborn as sns       
+            
+            cn =  np.unique(chemEvents['pred'])
+            fn = list(chemEvents.columns[1:])
             
             clf = RandomForestClassifier(n_estimators=100)
             clf = clf.fit(x_train, y_train)
             y_pred = clf.predict(x_test)
+            feature_imp = pd.Series(clf.feature_importances_,index=fn).sort_values(ascending=False)
+            feature_imp
+            
+            #forestFig = (outputDir, "randomforest", str(ignoredCol) + str(x) + '_randomForestImp.png')
+            #forestFig = "\\".join(forestFig)
+            
+            sns.barplot(x=feature_imp, y=feature_imp.index)
+            plt.xlabel('Feature Importance Score')
+            plt.ylabel('Features')
+            plt.title("Visualizing Important Features")
+            plt.legend()
+            plt.show()
+            
+            accuracy, cmat, classReport \
+                = classificationReports(accuracy_score, confusion_matrix, classification_report, y_test, y_pred)
+                
+            print(accuracy)
+            print(cmat)
+            print(classReport) 
+
+
             
         # K Nearest Neighbor
         if learner == 'knn':
