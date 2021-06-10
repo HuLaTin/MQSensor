@@ -33,11 +33,16 @@ random.seed(datetime.now())
 
 # how many simulated rows for each chemical?
 ##############
-simNum = 15  #
+simNum = 30  #
 ##############
 
 # specify data set to use as base
-trueData = pd.read_csv(r'Python\machineLearning\downsampled\2021Mar18TimeDS.csv')
+trueData = pd.read_csv(r'Python\eventsOutput\events\Strider-resample-2021Jun08_MQ2_0.1_5_45_Events.csv')
+
+# split string, selects chemical name (drops the numbering)
+trueData['chemical'] = trueData['chemical'].str.split("-").str[0]
+# rename column
+trueData = trueData.rename(columns={"chemical": "pred"})
 
 # creates a list of all chemicals that appear
 chems =  np.unique(trueData['pred'])

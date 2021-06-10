@@ -17,7 +17,7 @@ from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import statistics as stat
 import math
-from Python.util import checkForOutliers, eventDetection, movingAvg, downsampleData
+from Python.util import eventDetection
 
 # get current working directory
 cwd = os.getcwd()

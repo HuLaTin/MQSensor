@@ -1,19 +1,16 @@
 import numpy as np
 import pandas as pd
-import random
-import os
-from sklearn import metrics
-from sklearn.linear_model import LinearRegression
-from sklearn.svm import SVC
-from sklearn import neighbors
-from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans
-from sklearn.metrics import confusion_matrix, classification_report
-
+import random, os
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from Python.util import classificationReports
 
 from sklearn.model_selection import StratifiedShuffleSplit
 
-chemEvents = pd.read_csv(r'Python\eventsOutput\events\Strider-resample-2021Jun08_MQ2_0.1_5_45_Events.csv')
+simDataExist = False
+
+chemEvents = pd.read_csv(r'Python\eventsOutput\events\Strider-2021Jun08_MQ2_0.1_10_90_Events.csv')
+#chemSim = pd.read_csv(r'Python\machineLearning\simulated\strider-30-100-2021-06-09_simulatedData.csv'); simDataExist = True
+
 
 # get current working directory
 cwd = os.getcwd()
@@ -24,24 +21,23 @@ outputDir = (cwd, outputDir)
 outputDir = "\\".join(outputDir)
 
 ignoreChem = ' '
+
 numSplits = 2
-testSize = 0.3
-loops = 10
+testSize = 0.7
 
-learner = 'gnb'
+loops = 1
 
-#########################################################################
-#Supervised Learning Estimators
-#gnb =  GaussianNB() #Naive Bayes
-#lr = LinearRegression(normalize=True) # Linear Regression
-#svc = SVC(kernel='linear') #Support Vector Machines
-#knn = neighbors.KNeighborsClassifier(n_neighbors=5)
+# select Machine Learning
+# gnb = Naive Bayes         || tree = Decision Tree
+# knn = K-Nearest Neighbor  || lr = Linear Regression
+# kmeans = K-Means          || svm = Support Vector Machine
+# pca = Principal Component Analysis
 
-#Unsupervised Learning Estimators
-#pca = PCA(n_components=0.95)
-#k_means = KMeans(n_clusters=3, random_state=0)
-#########################################################################
+learner = 'tree'
 
+# Model Accuracy: how often is the classifier correct?
+# Model Precision: what percentage of positive tuples are labeled as such?
+# Model Recall: what percentage of positive tuples are labelled as such?
 
 # split string, selects chemical name (drops the numbering)
 chemEvents['chemical'] = chemEvents['chemical'].str.split("-").str[0]
@@ -52,12 +48,15 @@ chemEvents = chemEvents[~chemEvents.pred.str.contains(ignoreChem)]
 
 #colList = ["Temp_C*", "Humidity",  "Gas_ohms", "Pressure_pa"]
 colList = [" "]
-
+      
+print('learner -', learner)
 for i in range(0, len(colList)):
         
     ignoredCol = ignoreCol = colList[i]
     ignoreCol = '^', ignoreCol
     ignoreCol = ''.join(ignoreCol)
+    
+    print('ignoring ', ignoredCol)
     
     chemDF = chemEvents.loc[:,~chemEvents.columns.str.contains(ignoreCol)]
 
@@ -65,61 +64,119 @@ for i in range(0, len(colList)):
     g = chemDF.groupby('pred')
     chemDF = pd.DataFrame(g.apply(lambda chemDF: chemDF.sample(g.size().min())))
     chemDF = chemDF.reset_index(drop=True)
+    
+    X, y = chemDF.iloc[:,1:].values, chemDF['pred'].values
        
     x = 0
     while(1):
         x = x + 1
   
-        split = StratifiedShuffleSplit(n_splits=numSplits, test_size=testSize, random_state=random.seed())
         
-        for train_index, test_index in split.split(chemDF, chemDF['pred']):
-            strat_train_set = chemDF.loc[train_index]
-            strat_test_set = chemDF.loc[test_index]
+        if simDataExist == False:
+            split = StratifiedShuffleSplit(n_splits=numSplits, test_size=testSize, random_state=random.seed())
 
-        y_train = strat_train_set['pred']
-        x_train = strat_train_set.iloc[:,1:strat_train_set.shape[1]]
+            
+            for train_index, test_index in split.split(chemDF, chemDF['pred']):
+                strat_train_set = chemDF.loc[train_index]
+                strat_test_set = chemDF.loc[test_index]
 
-        y_test = strat_test_set['pred']
-        x_test = strat_test_set.iloc[:,1:strat_test_set.shape[1]]
+            y_train = strat_train_set['pred']
+            x_train = strat_train_set.iloc[:,1:strat_train_set.shape[1]]
+
+            y_test = strat_test_set['pred']
+            x_test = strat_test_set.iloc[:,1:strat_test_set.shape[1]]
+            
+        else:
+            
+            y_train = chemSim['pred']
+            x_train = chemSim.iloc[:,1:]
+
+            y_test = chemEvents['pred']
+            x_test = chemEvents.iloc[:,1:]
+                            
+        ## Supervised Learning ##
         
-        #Naive Bayes 
+        # Naive Bayes 
         if learner == 'gnb':
             from sklearn.naive_bayes import GaussianNB
-
             gnb =  GaussianNB()                    
             y_pred = gnb.fit(x_train, y_train).predict(x_test)
             
-            print("Mislabeled points out of %d : %d" % (x_test.shape[0], (y_test != y_pred).sum()))   
-            print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
-            print('CMat', confusion_matrix(y_test, y_pred))
-            print('classification Report', classification_report(y_test, y_pred))
-            
-        #Decision Tree    
+            accuracy, cmat, classReport \
+                = classificationReports(accuracy_score, confusion_matrix, classification_report, y_test, y_pred)
+                
+            print(accuracy)
+            print(cmat)
+            print(classReport)
+        
+        # Decision Tree    
         if learner == 'tree':
             
             from sklearn import tree
             import matplotlib.pyplot as plt
-
-            clf = tree.DecisionTreeClassifier()
+            
+            #gini or entropy
+            clf = tree.DecisionTreeClassifier(criterion='gini')
             
             cn =  np.unique(chemEvents['pred'])
             fn = list(chemEvents.columns[1:])
             
             clf = clf.fit(x_train,y_train)
             y_pred = clf.predict(x_test)
-            print("Accuracy:", metrics.accuracy_score(y_test, y_pred))
-            print(confusion_matrix(y_test, y_pred))
-            print(classification_report(y_test, y_pred))
             
             treeFig = (outputDir, "dTree", str(ignoredCol) + str(x) + '_decisionTree.png')
             treeFig = "\\".join(treeFig)
 
-            fig, axes = plt.subplots(nrows = 1,ncols = 1,figsize = (4,4), dpi=1000)
-            tree.plot_tree(clf, class_names=cn, feature_names=fn, filled=True);
-            fig.savefig(treeFig)         
+            fig, axes = plt.subplots(nrows = 1,ncols = 1,figsize = (4,4), dpi=2000)
+            tree.plot_tree(clf, class_names=cn, feature_names=fn, filled=True, rounded=True);
+            fig.savefig(treeFig)
             
+            accuracy, cmat, classReport \
+                = classificationReports(accuracy_score, confusion_matrix, classification_report, y_test, y_pred)
+                
+            print(accuracy)
+            print(cmat)
+            print(classReport)         
+     
+        # Random Forest Classifier
+        if learner == 'randomforestC':
+            from sklearn.ensemble import RandomForestClassifier
+            
+            clf = RandomForestClassifier(n_estimators=100)
+            clf = clf.fit(x_train, y_train)
+            y_pred = clf.predict(x_test)
+            
+        # K Nearest Neighbor
+        if learner == 'knn':
+            from sklearn import neighbors
+            knn = neighbors.KNeighborsClassifier(n_neighbors=3)
+            knn = knn.fit(x_train, y_train)
+            y_pred = knn.predict(x_test)
+            
+                    
+        # Support Vector Machine    
+        if learner == 'svm':
+            from sklearn.svm import SVC
+            svc = SVC(kernel = 'linear')
+            svc = svc.fit(x_train, y_train)
+            y_pred = svc.predict(x_test)
+                     
         
-        
+        ###########################
+        ## Unsupervised Learning ##
+                
+        # K Means
+        if learner == 'kmeans':
+            from sklearn.cluster import KMeans
+            k_means = KMeans(n_clusters=4, n_init=10)
+            k_means = k_means.fit(x_train)
+            y_pred = k_means.predict(x_test)
+            
+        if learner == "pca":
+            from sklearn.decomposition import PCA
+            pca = PCA(n_components=0.95)
+            pca_model = pca.fit_transform(x_train)
+
         if x == loops:
             print('\n')
             break
