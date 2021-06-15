@@ -445,12 +445,14 @@ def getNeighbors( bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expect
                 trialTimes, l, pd,  datetime, genCSV)
     return
 
-def classificationReports(accuracy_score, confusion_matrix, classification_report, y_test, y_pred):
+def classificationReports(accuracy_score, confusion_matrix, classification_report, recall_score, f1_score, y_test, y_pred):
     accuracy = accuracy_score(y_test, y_pred)
     cmat = confusion_matrix(y_test, y_pred)
     classReport = classification_report(y_test, y_pred)
+    recall = recall_score(y_test, y_pred, average='micro')
+    f1Score = f1_score(y_test, y_pred, average='micro')
     
-    return accuracy, cmat, classReport
+    return accuracy, recall, f1Score, cmat, classReport
 
 # class bitFlipping:    
 #     def __init__(numOfBits,min,max):
