@@ -52,7 +52,7 @@ def eventDetection(today, scaler, stat, normColumns, sRun, futureAvg, expectedCh
     # finding events
     ######################
     # do we need this -1??        
-    for z in range(2, len(sensorData)):
+    for z in range(sRun, len(sensorData)):
         # if change is greater than expectedChange / "Event" is True
         if sensorData.loc[z, "future-past"] >= expectedChange:
             sensorData.loc[z, "Event"] = "True"
@@ -296,15 +296,24 @@ def geneticMutateScore(bitMaxValue, expectedEvents, scaler, expectedChange, wind
     
     # creates new columns
     # first value in "Change" is 0   
-    sensorData.loc[0, "Change"] = 0
-    sensorData['Event'] = None
+    sensorData["sRun"] = 0
+    sensorData["sRun-Delta"] = 0
+    sensorData["futureAverage"] = 0
+    sensorData["Change"] = 0
+    sensorData["future-past"] = 0
+    sensorData["Event"] = None
     
     # determines change between each timepoint of normalized data column
-    ######################
-    # do we need this -1??
-    for z in range(1, len(sensorData)-1):
-        sensorData.loc[z, "Change"] = sensorData.loc[z, "ADC_N"] - sensorData.loc[z-1, "ADC_N"]
-    
+    for z in range(sRun, len(sensorData)-futureAvg):
+        #sensorData.loc[z, "Z-2"] = stat.mean(sensorData.loc[z-2:z, i])
+        #sensorData.loc[z, "Z-1"] = stat.mean(sensorData.loc[z-1:z, i])
+        
+        sensorData.loc[z, "sRun"] = stat.mean(sensorData.loc[z-sRun:z-1, 'ADC_N'])
+        sensorData.loc[z, "futureAverage"] = stat.mean(sensorData.loc[z:z+futureAvg, 'ADC_N'])
+        sensorData.loc[z, "future-past"] = sensorData.loc[z, "futureAverage"] - sensorData.loc[z, "sRun"]
+        #sensorData.loc[z, 'sRun-Delta'] = sensorData.loc[z, 'ADC_N'] - sensorData.loc[z, 'sRun']
+        #sensorData.loc[z, 'Change'] = sensorData.loc[z, 'ADC_N'] - sensorData.loc[z-1, 'ADC_N']
+     
     # creation of empty dataframes containing these columns           
     timeIndex = pd.DataFrame(columns=['Time'])
     subsetCounter = 0
@@ -314,7 +323,7 @@ def geneticMutateScore(bitMaxValue, expectedEvents, scaler, expectedChange, wind
     # do we need this -1??        
     for z in range(0, len(sensorData)-1):
         # if change is greater than expectedChange / "Event" is True
-        if sensorData.loc[z, "Change"] > expectedChange:
+        if sensorData.loc[z, "future-past"] >= expectedChange:
             sensorData.loc[z, "Event"] = "True"
             # checks to make sure we dont run out of the dataframe
             # store start/end times of events
@@ -355,6 +364,8 @@ def geneticMutateScore(bitMaxValue, expectedEvents, scaler, expectedChange, wind
     smallNumber = (bitMaxValue - expectedChange) / 10
     score = ((eventsTrue * 1.1) / (expectedEvents + eventsFalse)) + smallNumber
     print("expectedChange: " + str(expectedChange))
+    print("sRun: " + str(sRun))
+    print("futureAvg: " + str(futureAvg))
     print("score: " + str(score))
     
     #parameterlst = [triggerSensor, expectedChange, expectedEvents, eventsTrue, eventsFalse, score]

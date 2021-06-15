@@ -6,7 +6,6 @@
 
 import pickle
 import pandas as pd
-import numpy as np
 import os
 
 # get current working directory
@@ -18,7 +17,7 @@ outputDir = (cwd, outputDir)
 outputDir = "\\".join(outputDir)
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\20200601StriderGasStream.csv')
+sensorData = pd.read_csv(r'Python\Data\thru2021June15StriderGas.csv')
 trialTimes = pd.read_csv(r'Python\Data\striderTrials.csv')
 
 pickle.dump(sensorData, open( outputDir + "sensorData.p", "wb" ) )

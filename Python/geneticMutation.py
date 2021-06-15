@@ -19,6 +19,8 @@ import random
 from datetime import datetime, date
 from sklearn.preprocessing import MinMaxScaler
 from Python.util import genRandomBits, getNeighbors
+import statistics as stat
+
 
 # get current working directory
 cwd = os.getcwd()
@@ -98,14 +100,21 @@ trialTimes = trialTimes.reset_index(drop=True)
 
 expectedEvents = len(trialTimes)
 
-numBits = 10
+numBits = 30
 
 bitMinValue = 0.05
 bitMaxValue = .6
+runbitMinValue = 1
+runbitMaxValue = 10
+futurebitMinValue = 1
+futurebitMaxValue = 10
+
 # bits = {0:0,1:0,2:0,3:0,4:0,5:1,6:0,7:0}
 bits = genRandomBits(random, numBits)
 
 # desired threshold of change that determines if events occured
+sRun = int(3)
+futureAvg = int(1)
 expectedChange = float(.1)
 windowSize = int(50)
 score = 0
@@ -113,5 +122,5 @@ score = 0
 i = ("MQ2_ADC")
 
 # this is a recursive funtion
-getNeighbors(bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expectedChange, windowSize, sensorData,
+getNeighbors(stat, bitMinValue, bitMaxValue, runbitMinValue, runbitMaxValue, futurebitMinValue, futurebitMaxValue, bits, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
             trialTimes, i, pd,  datetime, genCSV)

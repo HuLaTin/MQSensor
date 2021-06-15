@@ -8,9 +8,9 @@ from datetime import date
 
 from sklearn.model_selection import StratifiedShuffleSplit
 
-avgColumns = False
+avgColumns = True
 
-chemEvents = pd.read_csv(r'Python\eventsOutput\eventsTrim\Strider-resample-2021Jun08_MQ2_0.1_5_45_EventsTrim.csv')
+chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jun15_MQ2_0.1_5_90_Events.csv')
 
 # get current working directory
 cwd = os.getcwd()
@@ -29,15 +29,15 @@ outputDir = "\\".join(outputDir)
 
 ignoreChem = ' '
 
-numSplits = 10
-trainSize = 0.4
+numSplits = 2
+trainSize = 0.5
 
 # select Machine Learning
 # gnb = Naive Bayes         || tree = Decision Tree
 # knn = K-Nearest Neighbor  || svm = Support Vector Machine
-# randomforestC = Random Forest Classifier
+# rf = Random Forest Classifier
 
-learner = 'knn'
+learner = 'rf'
 
 # Model Accuracy: how often is the classifier correct?
 # Model Precision: what percentage of positive tuples are labeled as such?
@@ -62,12 +62,16 @@ chemEvents = chemEvents.rename(columns={"chemical": "pred"})
 
 chemEvents = chemEvents[~chemEvents.pred.str.contains(ignoreChem)]
 
+#this removes BME680 readings
+chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Temp_C*")]; chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Humidity")]; chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Gas_ohms")]; chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Pressure_pa")]
+
 #colList = ["Temp_C*", "Humidity",  "Gas_ohms", "Pressure_pa"]
-#colList = ["MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC", "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC", "Temp_C*", "Humidity",  "Gas_ohms", "Pressure_pa"]
-colList = ["None"]
-      
+colList = ["None", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC", "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC"]
+#colList = ["None"]
+
 for i in range(0, len(colList)):
-        
+    x = 0
+
     ignoredCol = ignoreCol = colList[i]
     ignoreCol = '^', ignoreCol
     ignoreCol = ''.join(ignoreCol)
@@ -84,6 +88,7 @@ for i in range(0, len(colList)):
     split = StratifiedShuffleSplit(n_splits=numSplits, train_size=trainSize, random_state=random.seed())
        
     for train_index, test_index in split.split(chemDF, chemDF['pred']):
+        x = x + 1
         
         strat_train_set = chemDF.loc[train_index]
         strat_test_set = chemDF.loc[test_index]
@@ -94,7 +99,7 @@ for i in range(0, len(colList)):
         y_test = strat_test_set['pred']
         x_test = strat_test_set.iloc[:,1:strat_test_set.shape[1]]
             
-        learninglst = [str(learner), str(trainSize), str(len(x_train)), str(colList[i]), str(len(chemEvents.columns)-1)]
+        learninglst = [str(learner), str(trainSize), str(len(x_train)), str(colList[i]), str(len(chemDF.columns)-1)]
         print(learninglst)
         
         # Naive Bayes 
@@ -119,10 +124,10 @@ for i in range(0, len(colList)):
             import matplotlib.pyplot as plt
             
             #gini or entropy
-            clf = tree.DecisionTreeClassifier(criterion='gini', max_depth=2)
+            clf = tree.DecisionTreeClassifier(criterion='entropy', max_depth=2)
             
-            cn =  np.unique(chemEvents['pred'])
-            fn = list(chemEvents.columns[1:])
+            cn =  np.unique(chemDF['pred'])
+            fn = list(chemDF.columns[1:])
             
             clf = clf.fit(x_train,y_train)
             y_pred = clf.predict(x_test)
@@ -145,12 +150,12 @@ for i in range(0, len(colList)):
             print(classReport)         
      
         # Random Forest Classifier
-        if learner == 'randomforestC':
+        if learner == 'rf':
             from sklearn.ensemble import RandomForestClassifier
                   
             
-            cn =  np.unique(chemEvents['pred'])
-            fn = list(chemEvents.columns[1:])
+            cn =  np.unique(chemDF['pred'])
+            fn = list(chemDF.columns[1:])
             
             clf = RandomForestClassifier(n_estimators=100, max_depth=None, criterion='entropy')
             clf = clf.fit(x_train, y_train)
@@ -163,7 +168,7 @@ for i in range(0, len(colList)):
                 forestFig = (outputDir, "randomforest", str(ignoredCol) + str(x) + '_forestTree.png')
                 forestFig = "\\".join(forestFig)
             
-                fig, axes = plt.subplots(nrows = 1,ncols = 1,figsize = (4,4), dpi=2000)
+                fig, axes = plt.subplots(nrows = 1,ncols = 1,figsize = (6,6), dpi=1000)
                 sns.barplot(x=feature_imp, y=feature_imp.index)
                 plt.xlabel('Feature Importance Score')
                 plt.ylabel('Features')
@@ -215,4 +220,3 @@ for i in range(0, len(colList)):
             print('f1 ', f1Score)
             print(cmat)
             print(classReport)
-        

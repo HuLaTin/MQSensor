@@ -41,7 +41,7 @@ futureAvg = 1
 expectedChange = .1
 
 preWindow = 4
-postWindow = 45
+postWindow = 90
 
 windowSize = preWindow + postWindow + 1
 
@@ -61,7 +61,7 @@ eventsTrim = None
 sdThresh = 0
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\thru2021June08StriderGas.csv')
+sensorData = pd.read_csv(r'Python\Data\thru2021June15StriderGas.csv')
 trialTimes = pd.read_csv(r'Python\Data\striderTrials.csv')
 
 # pickleJar import
@@ -142,12 +142,14 @@ print('\n')
 if resample == True:
     if tDAvg <= 60:
         print("Readings taken less than a minute apart.")
-        sensorData = sensorData.iloc[::2].reset_index(drop = True)
+        #sensorData = sensorData.iloc[::2].reset_index(drop = True)
         #sensorData.iloc[1::2]
     
 
 # creates list of columns that will be used as the "trigger" for determining events
-names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
+#names = ("MQ2", "MQ3", "MQ4", "MQ5","MQ6", "MQ7", "MQ8", "MQ9")
+names = ("MQ2",)
+
 
 # uses function on each signal
 ################## CHECK INDEXING #############################
