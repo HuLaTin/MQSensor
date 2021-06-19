@@ -8,9 +8,9 @@ from datetime import date
 
 from sklearn.model_selection import StratifiedShuffleSplit
 
-#avgColumns = True
+avgColumns = False
 
-chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jun17_MQ2_0.1_5_20_Events.csv')
+chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jun17_MQ2_0.1_5_20_N_Events.csv')
 #chemEvents = chemEvents.append(chemEvents); chemEvents= chemEvents.reset_index(drop=True)
 # get current working directory
 cwd = os.getcwd()
@@ -111,9 +111,9 @@ for i in range(0, len(colList)):
             accuracy, recall, f1Score, cmat, classReport \
                 = classificationReports(accuracy_score, confusion_matrix, classification_report, recall_score, f1_score, y_test, y_pred)
                 
-            print(accuracy)
-            print(recall)
-            print(f1Score)
+            print('accuracy ', accuracy)
+            print('recall ', recall)
+            print('f1 ', f1Score)
             print(cmat)
             print(classReport)
         

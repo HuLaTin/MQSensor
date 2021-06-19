@@ -44,7 +44,7 @@ windowSize = preWindow + postWindow + 1
 
 #normalize output?
 normColumns = True
-#resample = True
+resample = False
 
 useMovingAvg = False
 

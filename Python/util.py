@@ -282,6 +282,56 @@ def checkForOutliers(chems, eventsTrim, math, pd, stat, sdThresh):
 
     return outliers
 
+def getNeighbors(stat, bitMinValue, bitMaxValue, runbitMinValue, runbitMaxValue, futurebitMinValue, futurebitMaxValue, bits, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
+            trialTimes, l, pd,  datetime, genCSV):
+    '''
+    
+    '''
+    # Returns a dict where the key is the bit of bits that was flipped, the value is the cost of the resulting dict (from the flipped bit)
+    neighborBitsCost = bits.copy()
+    neighborBitsScore = bits.copy()
+    eventsTrue = 0
+    eventsFalse = 0
+    #changeScore = float()
+    for i in neighborBitsCost:
+        neighborBitsCost[i] = flipBit(neighborBitsCost[i])
+        expectedChange = getValueOfBits(dict(list(neighborBitsCost.items())[0:10]), bitMinValue, bitMaxValue)
+        sRun = int(getValueOfBits(dict(list(neighborBitsCost.items())[10:14]), runbitMinValue, runbitMaxValue))
+        futureAvg = int(getValueOfBits(dict(list(neighborBitsCost.items())[14:18]), futurebitMinValue, futurebitMaxValue))
+        score, eventsTrue, eventsFalse = geneticMutateScore(stat, bitMaxValue, runbitMaxValue, futurebitMaxValue, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
+                   trialTimes, l, pd, datetime)
+        # x = getValueOfBits(neighborBitsCost,bitMinValue, bitMaxValue)
+        neighborBitsScore[i] = score
+        neighborBitsCost[i] = flipBit(neighborBitsCost[i])
+    bestScore = 0
+    bestBits = dict()
+    for j in neighborBitsScore:
+        if neighborBitsScore[j] >= bestScore:
+            bestScore = neighborBitsScore[j]
+            bestBits = bits.copy()
+            bestBits[j] = flipBit(bestBits[j])
+            print(bestBits)
+            print("Flipped bit: " + str(j))
+            print("Expected Change - " + str(getValueOfBits(dict(list(bestBits.items())[0:10]), bitMinValue, bitMaxValue)))
+            print("sRun - " + str(getValueOfBits(dict(list(bestBits.items())[10:14]), runbitMinValue, runbitMaxValue)))
+            print("fAvg - " + str(getValueOfBits(dict(list(bestBits.items())[14:18]), futurebitMinValue, futurebitMaxValue)))
+
+            print("Best score = " + str(bestScore))
+            genScoring = [l, (str(bitMinValue) + " - " + str(bitMaxValue)), float(expectedChange), str(sRun), str(futureAvg), int(eventsTrue), int(eventsFalse), float(bestScore), str(bestBits)]
+            scoringCSV(genScoring, genCSV, pd)
+    getNeighbors(stat, bitMinValue, bitMaxValue, runbitMinValue, runbitMaxValue, futurebitMinValue, futurebitMaxValue, bits, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
+            trialTimes, l, pd,  datetime, genCSV)
+    return
+
+def classificationReports(accuracy_score, confusion_matrix, classification_report, recall_score, f1_score, y_test, y_pred):
+    accuracy = accuracy_score(y_test, y_pred)
+    cmat = confusion_matrix(y_test, y_pred)
+    classReport = classification_report(y_test, y_pred)
+    recall = recall_score(y_test, y_pred, average='micro')
+    f1Score = f1_score(y_test, y_pred, average='micro')
+    
+    return accuracy, recall, f1Score, cmat, classReport
+       
 def geneticMutateScore(stat, bitMaxValue, runbitMaxValue, futurebitMaxValue, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
                    trialTimes, i, pd, datetime):
     '''
@@ -394,20 +444,20 @@ def geneticMutateScore(stat, bitMaxValue, runbitMaxValue, futurebitMaxValue, exp
     runsmallNumber = (runbitMaxValue - (sRun/10)) / 10
     futuresmallNumber = (futurebitMaxValue - (futureAvg/10)) / 10
 
-    score = ((eventsTrue * 1.1) / (expectedEvents + eventsFalse))
+    score = ((eventsTrue * 1.1) / (expectedEvents + eventsFalse)) + smallNumber + runsmallNumber + futuresmallNumber
     
-    changeScore = score + smallNumber
-    runScore = score + runsmallNumber
-    futureScore = score + futuresmallNumber
+    #changeScore = score + smallNumber
+    #runScore = score + runsmallNumber
+    #futureScore = score + futuresmallNumber
     
-    print("expectedChange: " + str(expectedChange))
-    print("sRun: " + str(sRun))
-    print("futureAvg: " + str(futureAvg))
-    print("change score: " + str(changeScore))
-    print("run score: " + str(runScore))
-    print("future score: " + str(futureScore))
+    #print("expectedChange: " + str(expectedChange))
+    #print("sRun: " + str(sRun))
+    #print("futureAvg: " + str(futureAvg))
+    print("score: " + str(score))
+    #print("run score: " + str(runScore))
+    #print("future score: " + str(futureScore))
     
-    return(changeScore, runScore, futureScore, eventsTrue, eventsFalse)
+    return(score, eventsTrue, eventsFalse)
 
 def scoringCSV(genScoring, genCSV, pd):
     '''
@@ -442,58 +492,12 @@ def flipBit(num):
 def getValueOfBits(bits,min,max):
     '''
     takes dictionary of bits, and converts to a number between min and max
-    will only work with 10 bits
     '''
+    bits = {i: v for i, v in enumerate(bits.values())}
+    maxValueOfBits = (2**len(bits))-1
+
     x = 0
     for i in bits:
         x += (2**i)*bits[i]
     # Gets the percentage of 0-1023, converts to a %, and returns the number equal to the percent between min and max
-    return((((x/1023)*100) * (max - min) / 100) + min)
-
-def getNeighbors(stat, bitMinValue, bitMaxValue, runbitMinValue, runbitMaxValue, futurebitMinValue, futurebitMaxValue, bits, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
-            trialTimes, l, pd,  datetime, genCSV):
-    '''
-    
-    '''
-    # Returns a dict where the key is the bit of bits that was flipped, the value is the cost of the resulting dict (from the flipped bit)
-    neighborBitsCost = bits.copy()
-    neighborBitsScore = bits.copy()
-    eventsTrue = 0
-    eventsFalse = 0
-    changeScore = float()
-    runScore = float()
-    futureScore = float()
-    for i in neighborBitsCost:
-        neighborBitsCost[i] = flipBit(neighborBitsCost[i])
-        expectedChange = getValueOfBits(neighborBitsCost, bitMinValue, bitMaxValue)
-        changeScore, runScore, futureScore, eventsTrue, eventsFalse = geneticMutateScore(stat, bitMaxValue, runbitMaxValue, futurebitMaxValue, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
-                   trialTimes, l, pd, datetime)
-        # x = getValueOfBits(neighborBitsCost,bitMinValue, bitMaxValue)
-        neighborBitsScore[i] = changeScore
-        neighborBitsCost[i] = flipBit(neighborBitsCost[i])
-    bestScore = 0
-    bestBits = dict()
-    for j in neighborBitsScore:
-        if neighborBitsScore[j] >= bestScore:
-            bestScore = neighborBitsScore[j]
-            bestBits = bits.copy()
-            bestBits[j] = flipBit(bestBits[j])
-            print(bestBits)
-            print("Flipped bit: " + str(j))
-            print("Value - " + str(getValueOfBits(bestBits, bitMinValue, bitMaxValue)))
-            print("Best score = " + str(bestScore))
-            genScoring = [l, (str(bitMinValue) + " - " + str(bitMaxValue)), float(expectedChange), str(sRun), str(futureAvg), int(eventsTrue), int(eventsFalse), float(bestScore), str(bestBits)]
-            scoringCSV(genScoring, genCSV, pd)
-    getNeighbors(stat, bitMinValue, bitMaxValue, runbitMinValue, runbitMaxValue, futurebitMinValue, futurebitMaxValue, bits, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
-            trialTimes, l, pd,  datetime, genCSV)
-    return
-
-def classificationReports(accuracy_score, confusion_matrix, classification_report, recall_score, f1_score, y_test, y_pred):
-    accuracy = accuracy_score(y_test, y_pred)
-    cmat = confusion_matrix(y_test, y_pred)
-    classReport = classification_report(y_test, y_pred)
-    recall = recall_score(y_test, y_pred, average='micro')
-    f1Score = f1_score(y_test, y_pred, average='micro')
-    
-    return accuracy, recall, f1Score, cmat, classReport
-       
+    return((((x/maxValueOfBits)*100) * (max - min) / 100) + min)

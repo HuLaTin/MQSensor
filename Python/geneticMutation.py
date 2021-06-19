@@ -100,21 +100,24 @@ trialTimes = trialTimes.reset_index(drop=True)
 
 expectedEvents = len(trialTimes)
 
-numBits = 10
+numBits = 18
 
 bitMinValue = 0.05
 bitMaxValue = .6
 runbitMinValue = 1
-runbitMaxValue = 10
+runbitMaxValue = 16
 futurebitMinValue = 1
-futurebitMaxValue = 10
+futurebitMaxValue = 16
 
-# bits = {0:0,1:0,2:0,3:0,4:0,5:1,6:0,7:0}
+#bits = {0:0,1:0,2:0,3:0,4:0,5:1,6:0,7:0}
+#bits = {0:1,1:1,2:1,3:1,4:1,5:1,6:1,7:1,8:1,9:1}
+
 bits = genRandomBits(random, numBits)
 
+
 # desired threshold of change that determines if events occured
-sRun = int(3)
-futureAvg = int(1)
+sRun = int(5)
+futureAvg = int(5)
 expectedChange = float(.1)
 windowSize = int(100)
 score = 0
