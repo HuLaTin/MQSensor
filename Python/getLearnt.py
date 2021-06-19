@@ -8,10 +8,10 @@ from datetime import date
 
 from sklearn.model_selection import StratifiedShuffleSplit
 
-avgColumns = True
+#avgColumns = True
 
-chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jun15_MQ2_0.1_5_90_Events.csv')
-
+chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jun17_MQ2_0.1_5_20_Events.csv')
+#chemEvents = chemEvents.append(chemEvents); chemEvents= chemEvents.reset_index(drop=True)
 # get current working directory
 cwd = os.getcwd()
 
@@ -37,7 +37,7 @@ trainSize = 0.5
 # knn = K-Nearest Neighbor  || svm = Support Vector Machine
 # rf = Random Forest Classifier
 
-learner = 'rf'
+learner = 'tree'
 
 # Model Accuracy: how often is the classifier correct?
 # Model Precision: what percentage of positive tuples are labeled as such?
@@ -66,8 +66,8 @@ chemEvents = chemEvents[~chemEvents.pred.str.contains(ignoreChem)]
 chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Temp_C*")]; chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Humidity")]; chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Gas_ohms")]; chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Pressure_pa")]
 
 #colList = ["Temp_C*", "Humidity",  "Gas_ohms", "Pressure_pa"]
-colList = ["None", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC", "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC"]
-#colList = ["None"]
+#colList = ["None", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC", "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC"]
+colList = ["None"]
 
 for i in range(0, len(colList)):
     x = 0

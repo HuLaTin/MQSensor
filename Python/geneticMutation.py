@@ -34,8 +34,8 @@ outputDir = "\\".join(outputDir)
 today = date.today()
 today = today.strftime("%Y%b%d")
 
-genColNames = ["sensor", "range", "expectedChange", "True", "False", "bestScore", "bestBits"]
-geneticScoring = ["0", "0", "0", "0", "0", "0", "0"]
+genColNames = ["sensor", "range", "expectedChange", "sRun", "futureAvg", "True", "False", "bestScore", "bestBits"]
+geneticScoring = ["0", "0", "0", "0", "0", "0", "0", "0", "0"]
 geneticScoring = pd.DataFrame(geneticScoring).T
 geneticScoring.columns = genColNames
 genCSV = (outputDir, "mutation" ,today + '_geneticScore.csv')
@@ -58,7 +58,7 @@ parameterlst = []
 events = None
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\20200601StriderGasStream.csv')
+sensorData = pd.read_csv(r'Python\Data\thru2021June17StriderGas.csv')
 trialTimes = pd.read_csv(r'Python\Data\striderTrials.csv')
 
 # renames chemicals in "trialTimes", adds a number at end for easier identification
@@ -100,7 +100,7 @@ trialTimes = trialTimes.reset_index(drop=True)
 
 expectedEvents = len(trialTimes)
 
-numBits = 30
+numBits = 10
 
 bitMinValue = 0.05
 bitMaxValue = .6
@@ -116,7 +116,7 @@ bits = genRandomBits(random, numBits)
 sRun = int(3)
 futureAvg = int(1)
 expectedChange = float(.1)
-windowSize = int(50)
+windowSize = int(100)
 score = 0
 
 i = ("MQ2_ADC")

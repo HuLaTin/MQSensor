@@ -282,11 +282,12 @@ def checkForOutliers(chems, eventsTrim, math, pd, stat, sdThresh):
 
     return outliers
 
-def geneticMutateScore(bitMaxValue, expectedEvents, scaler, expectedChange, windowSize, sensorData,
-                   trialTimes, i, pd,  datetime):
+def geneticMutateScore(stat, bitMaxValue, runbitMaxValue, futurebitMaxValue, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
+                   trialTimes, i, pd, datetime):
     '''
-    Tommy Haycraft
+    Tommy Haycraft & Hunter Tiner
     '''
+    preWindow = 4
     #triggerSensor = i
     eventName = i
     i = eventName
@@ -315,26 +316,54 @@ def geneticMutateScore(bitMaxValue, expectedEvents, scaler, expectedChange, wind
         #sensorData.loc[z, 'Change'] = sensorData.loc[z, 'ADC_N'] - sensorData.loc[z-1, 'ADC_N']
      
     # creation of empty dataframes containing these columns           
+    eventIndex = pd.DataFrame(columns=['start', 'end'])
     timeIndex = pd.DataFrame(columns=['Time'])
-    subsetCounter = 0
 
+    # initialize counter and set starting values
+    subsetCounter = 0
+    # test without these lines of code?
+    eventIndex.loc[0,'start'] = 0
+    eventIndex.loc[0,'end'] = 0
+    
     # finding events
     ######################
     # do we need this -1??        
-    for z in range(0, len(sensorData)-1):
+    for z in range(sRun, len(sensorData)):
         # if change is greater than expectedChange / "Event" is True
         if sensorData.loc[z, "future-past"] >= expectedChange:
             sensorData.loc[z, "Event"] = "True"
             # checks to make sure we dont run out of the dataframe
             # store start/end times of events
-            if z > 4 and z < (len(sensorData)-(windowSize - 5)):
+            if z > preWindow and z < (len(sensorData)-(windowSize - 5)):
+                eventIndex.loc[subsetCounter, 'start'] = (z - preWindow)
+                eventIndex.loc[subsetCounter, 'end'] = (z + (windowSize - preWindow))
                 subsetCounter = (subsetCounter + 1)
                 timeIndex.loc[subsetCounter - 1, 'Time'] = sensorData.loc[z - 1, 'Time' ]
         else:
             # otherwise "False"
             sensorData.loc[z,'Event'] = "False"
       
-    timeIndex['Event'] = "False"
+    eventIndex["flag"] = 'False'
+    timeIndex["flag"] = 'False'
+    z = 0
+    
+    while(True):
+    #for z in range(len(eventIndex)-1):
+        start = eventIndex.loc[z, 'start']
+        end = eventIndex.loc[z, 'end']
+        for x in range(z+1, len(eventIndex)):
+            if eventIndex.loc[x, 'start'] > start and end < eventIndex.loc[x, 'end']:
+                if eventIndex.loc[x, 'start'] - start <= windowSize:
+                    eventIndex.loc[x, "flag"] = 'True'
+                    timeIndex.loc[x, "flag"] = 'True'
+        eventIndex = eventIndex[eventIndex['flag'].str.contains('False')]
+        timeIndex = timeIndex[timeIndex['flag'].str.contains('False')]
+        eventIndex = eventIndex.reset_index(drop=True)
+        timeIndex = timeIndex.reset_index(drop=True)
+
+        if z == len(eventIndex)-1:
+            break
+        z = z + 1
     
     # set time format    
     timeIndex['Time'] = pd.to_datetime(timeIndex['Time'], format='%Y-%m-%d %H:%M:%S.%f')  
@@ -352,6 +381,7 @@ def geneticMutateScore(bitMaxValue, expectedEvents, scaler, expectedChange, wind
 
     eventsTrue = 0
     eventsFalse = 0
+    
     if len(timeIndex) >= 1:
         #valueCounts = timeIndex.Event.value_counts()
         eventsTrue = len(timeIndex[timeIndex['Event'].str.contains("True")])
@@ -360,18 +390,24 @@ def geneticMutateScore(bitMaxValue, expectedEvents, scaler, expectedChange, wind
         print("True: " + str(eventsTrue))
         print("False: " + str(eventsFalse))
     
-    # score = eventsTrue / (expectedEvents * (eventsFalse + 1))
     smallNumber = (bitMaxValue - expectedChange) / 10
-    score = ((eventsTrue * 1.1) / (expectedEvents + eventsFalse)) + smallNumber
+    runsmallNumber = (runbitMaxValue - (sRun/10)) / 10
+    futuresmallNumber = (futurebitMaxValue - (futureAvg/10)) / 10
+
+    score = ((eventsTrue * 1.1) / (expectedEvents + eventsFalse))
+    
+    changeScore = score + smallNumber
+    runScore = score + runsmallNumber
+    futureScore = score + futuresmallNumber
+    
     print("expectedChange: " + str(expectedChange))
     print("sRun: " + str(sRun))
     print("futureAvg: " + str(futureAvg))
-    print("score: " + str(score))
+    print("change score: " + str(changeScore))
+    print("run score: " + str(runScore))
+    print("future score: " + str(futureScore))
     
-    #parameterlst = [triggerSensor, expectedChange, expectedEvents, eventsTrue, eventsFalse, score]
-    #parameterlst = pd.DataFrame([parameterlst])
-    
-    return(score, eventsTrue, eventsFalse)
+    return(changeScore, runScore, futureScore, eventsTrue, eventsFalse)
 
 def scoringCSV(genScoring, genCSV, pd):
     '''
@@ -393,12 +429,6 @@ def genRandomBits(random, numBits):
             bits[i] = 0
     return(bits)
 
-def newLowest(score,value,bits):
-    print("********\n********\n********")
-    print("Score:" + str(score))
-    print("Value:" + str(value))
-    print("Bits:"+str(bits))
-    
 def flipBit(num):
     '''
     1s becomes 0s, 0s becomes 1s
@@ -420,8 +450,8 @@ def getValueOfBits(bits,min,max):
     # Gets the percentage of 0-1023, converts to a %, and returns the number equal to the percent between min and max
     return((((x/1023)*100) * (max - min) / 100) + min)
 
-def getNeighbors( bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expectedChange, windowSize, sensorData,
-                trialTimes, l, pd,  datetime, genCSV):
+def getNeighbors(stat, bitMinValue, bitMaxValue, runbitMinValue, runbitMaxValue, futurebitMinValue, futurebitMaxValue, bits, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
+            trialTimes, l, pd,  datetime, genCSV):
     '''
     
     '''
@@ -430,14 +460,16 @@ def getNeighbors( bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expect
     neighborBitsScore = bits.copy()
     eventsTrue = 0
     eventsFalse = 0
-    score = float()
+    changeScore = float()
+    runScore = float()
+    futureScore = float()
     for i in neighborBitsCost:
         neighborBitsCost[i] = flipBit(neighborBitsCost[i])
         expectedChange = getValueOfBits(neighborBitsCost, bitMinValue, bitMaxValue)
-        score, eventsTrue, eventsFalse = geneticMutateScore(bitMaxValue, expectedEvents, scaler, expectedChange, windowSize, sensorData,
-                    trialTimes, l, pd,  datetime)
+        changeScore, runScore, futureScore, eventsTrue, eventsFalse = geneticMutateScore(stat, bitMaxValue, runbitMaxValue, futurebitMaxValue, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
+                   trialTimes, l, pd, datetime)
         # x = getValueOfBits(neighborBitsCost,bitMinValue, bitMaxValue)
-        neighborBitsScore[i] = score
+        neighborBitsScore[i] = changeScore
         neighborBitsCost[i] = flipBit(neighborBitsCost[i])
     bestScore = 0
     bestBits = dict()
@@ -450,10 +482,10 @@ def getNeighbors( bitMinValue, bitMaxValue, bits, expectedEvents, scaler, expect
             print("Flipped bit: " + str(j))
             print("Value - " + str(getValueOfBits(bestBits, bitMinValue, bitMaxValue)))
             print("Best score = " + str(bestScore))
-            genScoring = [l, (str(bitMinValue) + " - " + str(bitMaxValue)), float(expectedChange), int(eventsTrue), int(eventsFalse), float(bestScore), str(bestBits)]
+            genScoring = [l, (str(bitMinValue) + " - " + str(bitMaxValue)), float(expectedChange), str(sRun), str(futureAvg), int(eventsTrue), int(eventsFalse), float(bestScore), str(bestBits)]
             scoringCSV(genScoring, genCSV, pd)
-    getNeighbors(bitMinValue, bitMaxValue, bestBits, expectedEvents, scaler, expectedChange, windowSize, sensorData,
-                trialTimes, l, pd,  datetime, genCSV)
+    getNeighbors(stat, bitMinValue, bitMaxValue, runbitMinValue, runbitMaxValue, futurebitMinValue, futurebitMaxValue, bits, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
+            trialTimes, l, pd,  datetime, genCSV)
     return
 
 def classificationReports(accuracy_score, confusion_matrix, classification_report, recall_score, f1_score, y_test, y_pred):
@@ -464,8 +496,4 @@ def classificationReports(accuracy_score, confusion_matrix, classification_repor
     f1Score = f1_score(y_test, y_pred, average='micro')
     
     return accuracy, recall, f1Score, cmat, classReport
-
-# class bitFlipping:    
-#     def __init__(numOfBits,min,max):
-#         self.numOfBits = numOfBits
-#        
+       

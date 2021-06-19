@@ -5,18 +5,15 @@
 #####################
 
 # Import libraries
-import sys
 import os
 from numpy.core.numeric import NaN
 from numpy.lib.function_base import append, average
 import pandas as pd
 import random
 from datetime import datetime, date
-from pandas.core.frame import DataFrame
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import statistics as stat
-import math
 from Python.util import eventDetection
 
 # get current working directory
@@ -41,13 +38,13 @@ futureAvg = 1
 expectedChange = .1
 
 preWindow = 4
-postWindow = 90
+postWindow = 95
 
 windowSize = preWindow + postWindow + 1
 
 #normalize output?
-normColumns = False
-resample = True
+normColumns = True
+#resample = True
 
 useMovingAvg = False
 
@@ -61,7 +58,7 @@ eventsTrim = None
 sdThresh = 0
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\thru2021June15StriderGas.csv')
+sensorData = pd.read_csv(r'Python\Data\thru2021June17StriderGas.csv')
 trialTimes = pd.read_csv(r'Python\Data\striderTrials.csv')
 
 # pickleJar import
@@ -142,7 +139,7 @@ print('\n')
 if resample == True:
     if tDAvg <= 60:
         print("Readings taken less than a minute apart.")
-        #sensorData = sensorData.iloc[::2].reset_index(drop = True)
+        sensorData = sensorData.iloc[::2].reset_index(drop = True)
         #sensorData.iloc[1::2]
     
 
