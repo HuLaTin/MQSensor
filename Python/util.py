@@ -322,16 +322,7 @@ def getNeighbors(stat, bitMinValue, bitMaxValue, runbitMinValue, runbitMaxValue,
     getNeighbors(stat, bitMinValue, bitMaxValue, runbitMinValue, runbitMaxValue, futurebitMinValue, futurebitMaxValue, bits, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
             trialTimes, l, pd,  datetime, genCSV)
     return
-
-def classificationReports(accuracy_score, confusion_matrix, classification_report, recall_score, f1_score, y_test, y_pred):
-    accuracy = accuracy_score(y_test, y_pred)
-    cmat = confusion_matrix(y_test, y_pred)
-    classReport = classification_report(y_test, y_pred)
-    recall = recall_score(y_test, y_pred, average='micro')
-    f1Score = f1_score(y_test, y_pred, average='micro')
-    
-    return accuracy, recall, f1Score, cmat, classReport
-       
+     
 def geneticMutateScore(stat, bitMaxValue, runbitMaxValue, futurebitMaxValue, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
                    trialTimes, i, pd, datetime):
     '''
@@ -356,14 +347,11 @@ def geneticMutateScore(stat, bitMaxValue, runbitMaxValue, futurebitMaxValue, exp
     
     # determines change between each timepoint of normalized data column
     for z in range(sRun, len(sensorData)-futureAvg):
-        #sensorData.loc[z, "Z-2"] = stat.mean(sensorData.loc[z-2:z, i])
-        #sensorData.loc[z, "Z-1"] = stat.mean(sensorData.loc[z-1:z, i])
         
         sensorData.loc[z, "sRun"] = stat.mean(sensorData.loc[z-sRun:z-1, 'ADC_N'])
         sensorData.loc[z, "futureAverage"] = stat.mean(sensorData.loc[z:z+futureAvg, 'ADC_N'])
         sensorData.loc[z, "future-past"] = sensorData.loc[z, "futureAverage"] - sensorData.loc[z, "sRun"]
-        #sensorData.loc[z, 'sRun-Delta'] = sensorData.loc[z, 'ADC_N'] - sensorData.loc[z, 'sRun']
-        #sensorData.loc[z, 'Change'] = sensorData.loc[z, 'ADC_N'] - sensorData.loc[z-1, 'ADC_N']
+
      
     # creation of empty dataframes containing these columns           
     eventIndex = pd.DataFrame(columns=['start', 'end'])
@@ -445,17 +433,8 @@ def geneticMutateScore(stat, bitMaxValue, runbitMaxValue, futurebitMaxValue, exp
     futuresmallNumber = (futurebitMaxValue - (futureAvg/10)) / 10
 
     score = ((eventsTrue * 1.1) / (expectedEvents + eventsFalse)) + smallNumber + runsmallNumber + futuresmallNumber
-    
-    #changeScore = score + smallNumber
-    #runScore = score + runsmallNumber
-    #futureScore = score + futuresmallNumber
-    
-    #print("expectedChange: " + str(expectedChange))
-    #print("sRun: " + str(sRun))
-    #print("futureAvg: " + str(futureAvg))
+
     print("score: " + str(score))
-    #print("run score: " + str(runScore))
-    #print("future score: " + str(futureScore))
     
     return(score, eventsTrue, eventsFalse)
 
@@ -501,3 +480,12 @@ def getValueOfBits(bits,min,max):
         x += (2**i)*bits[i]
     # Gets the percentage of 0-1023, converts to a %, and returns the number equal to the percent between min and max
     return((((x/maxValueOfBits)*100) * (max - min) / 100) + min)
+
+def classificationReports(accuracy_score, confusion_matrix, classification_report, recall_score, f1_score, y_test, y_pred):
+    accuracy = accuracy_score(y_test, y_pred)
+    cmat = confusion_matrix(y_test, y_pred)
+    classReport = classification_report(y_test, y_pred)
+    recall = recall_score(y_test, y_pred, average='micro')
+    f1Score = f1_score(y_test, y_pred, average='micro')
+    
+    return accuracy, recall, f1Score, cmat, classReport
