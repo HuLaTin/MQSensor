@@ -7,7 +7,6 @@
 # Import libraries
 import os
 from numpy.core.numeric import NaN
-from numpy.lib.function_base import append, average
 import pandas as pd
 import random
 from datetime import datetime, date
@@ -43,7 +42,7 @@ postWindow = 95
 windowSize = preWindow + postWindow + 1
 
 #normalize output?
-normColumns = True
+normColumns = False
 resample = False
 
 useMovingAvg = False
@@ -58,7 +57,7 @@ eventsTrim = None
 sdThresh = 0
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\thru2021June17StriderGas.csv')
+sensorData = pd.read_csv(r'Python\Data\thru2021June22StriderGas.csv')
 trialTimes = pd.read_csv(r'Python\Data\striderTrials.csv')
 
 # pickleJar import

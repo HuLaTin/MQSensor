@@ -29,7 +29,7 @@ outputDir = "\\".join(outputDir)
 
 ignoreChem = ' '
 
-numSplits = 2
+numSplits = 10
 trainSize = 0.5
 
 # select Machine Learning

@@ -58,7 +58,7 @@ parameterlst = []
 events = None
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\thru2021June17StriderGas.csv')
+sensorData = pd.read_csv(r'Python\Data\thru2021June22StriderGas.csv')
 trialTimes = pd.read_csv(r'Python\Data\striderTrials.csv')
 
 # renames chemicals in "trialTimes", adds a number at end for easier identification
