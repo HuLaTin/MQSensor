@@ -481,11 +481,12 @@ def getValueOfBits(bits,min,max):
     # Gets the percentage of 0-1023, converts to a %, and returns the number equal to the percent between min and max
     return((((x/maxValueOfBits)*100) * (max - min) / 100) + min)
 
-def classificationReports(accuracy_score, confusion_matrix, classification_report, recall_score, f1_score, y_test, y_pred):
+def classificationReports(accuracy_score, recall_score, precision_score, confusion_matrix, classification_report, y_test, y_pred):
     accuracy = accuracy_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred, average='macro')
+    precision = precision_score(y_test, y_pred, average='macro')
+
     cmat = confusion_matrix(y_test, y_pred)
     classReport = classification_report(y_test, y_pred)
-    recall = recall_score(y_test, y_pred, average='micro')
-    f1Score = f1_score(y_test, y_pred, average='micro')
     
-    return accuracy, recall, f1Score, cmat, classReport
+    return accuracy, recall, precision, cmat, classReport

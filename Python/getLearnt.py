@@ -2,21 +2,21 @@ import numpy as np
 import pandas as pd
 import random, os
 import statistics as stat
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, plot_roc_curve, recall_score, f1_score
+from sklearn.metrics import accuracy_score, recall_score, precision_score, confusion_matrix, classification_report
 from Python.util import classificationReports
 from datetime import date
-
 from sklearn.model_selection import StratifiedShuffleSplit
+
+#from sklearn.metrics import average_precision_score
 
 avgColumns = False
 
-chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jun17_MQ2_0.1_5_20_N_Events.csv')
+chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jun22_MQ2_0.1_5_20_Events.csv') #25
+#chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jun22_MQ2_0.1_5_45_Events.csv') #50
+#chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jun22_MQ2_0.1_5_95_Events.csv') #100
 #chemEvents = chemEvents.append(chemEvents); chemEvents= chemEvents.reset_index(drop=True)
 # get current working directory
 cwd = os.getcwd()
-
-learningDf = pd.DataFrame()
-learniglst = []
 
 # set today's date
 today = date.today()
@@ -36,8 +36,9 @@ trainSize = 0.5
 # gnb = Naive Bayes         || tree = Decision Tree
 # knn = K-Nearest Neighbor  || svm = Support Vector Machine
 # rf = Random Forest Classifier
+# ovr = One Versus Rest
 
-learner = 'tree'
+learner = 'svm'
 
 # Model Accuracy: how often is the classifier correct?
 # Model Precision: what percentage of positive tuples are labeled as such?
@@ -63,7 +64,7 @@ chemEvents = chemEvents.rename(columns={"chemical": "pred"})
 chemEvents = chemEvents[~chemEvents.pred.str.contains(ignoreChem)]
 
 #this removes BME680 readings
-chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Temp_C*")]; chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Humidity")]; chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Gas_ohms")]; chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Pressure_pa")]
+#chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Temp_C*")]; chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Humidity")]; chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Gas_ohms")]; chemEvents = chemEvents.loc[:,~chemEvents.columns.str.contains("Pressure_pa")]
 
 #colList = ["Temp_C*", "Humidity",  "Gas_ohms", "Pressure_pa"]
 #colList = ["None", "MQ2_ADC", "MQ3_ADC", "MQ4_ADC", "MQ5_ADC", "MQ6_ADC", "MQ7_ADC", "MQ8_ADC", "MQ9_ADC"]
@@ -79,9 +80,9 @@ for i in range(0, len(colList)):
     chemDF = chemEvents.loc[:,~chemEvents.columns.str.contains(ignoreCol)]
 
     # groups by class/chemical, downsamples to balance the dataset
-    g = chemDF.groupby('pred')
-    chemDF = pd.DataFrame(g.apply(lambda chemDF: chemDF.sample(g.size().min())))
-    chemDF = chemDF.reset_index(drop=True)
+    #g = chemDF.groupby('pred')
+    #chemDF = pd.DataFrame(g.apply(lambda chemDF: chemDF.sample(g.size().min())))
+    #chemDF = chemDF.reset_index(drop=True)
     
     X, y = chemDF.iloc[:,1:].values, chemDF['pred'].values
     
@@ -99,8 +100,8 @@ for i in range(0, len(colList)):
         y_test = strat_test_set['pred']
         x_test = strat_test_set.iloc[:,1:strat_test_set.shape[1]]
             
-        learninglst = [str(learner), str(trainSize), str(len(x_train)), str(colList[i]), str(len(chemDF.columns)-1)]
-        print(learninglst)
+        #learninglst = [str(learner), str(trainSize), str(len(x_train)), str(colList[i]), str(len(chemDF.columns)-1)]
+        #print(learninglst)
         
         # Naive Bayes 
         if learner == 'gnb':
@@ -108,15 +109,6 @@ for i in range(0, len(colList)):
             gnb =  GaussianNB()                    
             y_pred = gnb.fit(x_train, y_train).predict(x_test)
             
-            accuracy, recall, f1Score, cmat, classReport \
-                = classificationReports(accuracy_score, confusion_matrix, classification_report, recall_score, f1_score, y_test, y_pred)
-                
-            print('accuracy ', accuracy)
-            print('recall ', recall)
-            print('f1 ', f1Score)
-            print(cmat)
-            print(classReport)
-        
         # Decision Tree    
         if learner == 'tree':
             
@@ -138,16 +130,7 @@ for i in range(0, len(colList)):
             fig, axes = plt.subplots(nrows = 1,ncols = 1,figsize = (4,4), dpi=2000)
             tree.plot_tree(clf, class_names=cn, feature_names=fn, filled=True, rounded=True);
             fig.savefig(treeFig)
-            plt.close
-            
-            accuracy, recall, f1Score, cmat, classReport \
-                = classificationReports(accuracy_score, confusion_matrix, classification_report, recall_score, f1_score, y_test, y_pred)
-                
-            print('accuracy ', accuracy)
-            print('recall ', recall)
-            print('f1 ', f1Score)
-            print(cmat)
-            print(classReport)         
+            plt.close       
      
         # Random Forest Classifier
         if learner == 'rf':
@@ -178,16 +161,7 @@ for i in range(0, len(colList)):
                 fig.savefig(forestFig)
                 plt.close
 
-            
-            accuracy, recall, f1Score, cmat, classReport \
-                = classificationReports(accuracy_score, confusion_matrix, classification_report, recall_score, f1_score, y_test, y_pred)
-                
-            print('accuracy ', accuracy)
-            print('recall ', recall)
-            print('f1 ', f1Score)
-            print('feature importance -', feature_imp)    
-            print(cmat)
-            print(classReport)
+            #print('feature importance -', feature_imp)    
                
         # K Nearest Neighbor
         if learner == 'knn':
@@ -195,15 +169,6 @@ for i in range(0, len(colList)):
             knn = neighbors.KNeighborsClassifier(n_neighbors=5)
             knn = knn.fit(x_train, y_train)
             y_pred = knn.predict(x_test)
-            
-            accuracy, recall, f1Score, cmat, classReport \
-                = classificationReports(accuracy_score, confusion_matrix, classification_report, recall_score, f1_score, y_test, y_pred)
-                
-            print('accuracy ', accuracy)
-            print('recall ', recall)
-            print('f1 ', f1Score)
-            print(cmat)
-            print(classReport)
                   
         # Support Vector Machine    
         if learner == 'svm':
@@ -211,12 +176,30 @@ for i in range(0, len(colList)):
             svc = SVC(kernel = 'linear')
             svc = svc.fit(x_train, y_train)
             y_pred = svc.predict(x_test)
+        
+        if learner == 'ovr':
+            from sklearn.multiclass import OneVsRestClassifier
+            from sklearn.svm import SVC
             
-            accuracy, recall, f1Score, cmat, classReport \
-                = classificationReports(accuracy_score, confusion_matrix, classification_report, recall_score, f1_score, y_test, y_pred)
+            ovr = OneVsRestClassifier(SVC()).fit(x_train, x_train)
+            y_pred = ovr.predict(x_test)
+
+
+            
+        accuracy, recall, precision, cmat, classReport \
+                    = classificationReports(accuracy_score, recall_score, precision_score, confusion_matrix, classification_report, y_test, y_pred)
+        
+        print(str(learner), ' - ', str(x))
+        print('\n')
+        print('accuracy -  ', accuracy)
+        print('recall -    ', recall)
+        print('precision - ', precision)
+        print(cmat)
+        print('\n')
+
+        #print(classReport)
+        #print(average_precision_score(y_test, y_pred))
+
                 
-            print('accuracy ', accuracy)
-            print('recall ', recall)
-            print('f1 ', f1Score)
-            print(cmat)
-            print(classReport)
+
+
