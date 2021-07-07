@@ -11,12 +11,16 @@ from sklearn.model_selection import StratifiedShuffleSplit
 
 avgColumns = False
 
-chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jun22_MQ2_0.1_5_20_Events.csv') #25
-#chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jun22_MQ2_0.1_5_45_Events.csv') #50
-#chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jun22_MQ2_0.1_5_95_Events.csv') #100
-#chemEvents = chemEvents.append(chemEvents); chemEvents= chemEvents.reset_index(drop=True)
+chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jul07_MQ2_0.1_5_20_Events.csv') #25
+#chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jul07_MQ2_0.1_5_45_Events.csv') #50
+#chemEvents = pd.read_csv(r'Python\eventsOutput\events\2021Jul07_MQ2_0.1_5_95_Events.csv') #100
+chemEvents = chemEvents.append(chemEvents); chemEvents= chemEvents.reset_index(drop=True); chemEvents = chemEvents.append(chemEvents); chemEvents= chemEvents.reset_index(drop=True)
 # get current working directory
 cwd = os.getcwd()
+
+unknownChem = chemEvents[chemEvents.chemical.str.contains('Unknown')]
+unknowns = unknownChem.iloc[:,1:unknownChem.shape[1]]
+chemEvents = chemEvents.loc[:46]
 
 # set today's date
 today = date.today()
@@ -30,7 +34,7 @@ outputDir = "\\".join(outputDir)
 ignoreChem = ' '
 
 numSplits = 10
-trainSize = 0.5
+trainSize = 0.8
 
 # select Machine Learning
 # gnb = Naive Bayes         || tree = Decision Tree
@@ -144,7 +148,7 @@ for i in range(0, len(colList)):
             clf = clf.fit(x_train, y_train)
             y_pred = clf.predict(x_test)
             feature_imp = pd.Series(clf.feature_importances_,index=fn).sort_values(ascending=False)
-            
+                        
             if avgColumns == True:
                 import matplotlib.pyplot as plt
                 import seaborn as sns 
@@ -199,7 +203,3 @@ for i in range(0, len(colList)):
 
         #print(classReport)
         #print(average_precision_score(y_test, y_pred))
-
-                
-
-

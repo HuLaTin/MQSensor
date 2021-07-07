@@ -57,7 +57,7 @@ eventsTrim = None
 sdThresh = 0
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\thru2021June22StriderGas.csv')
+sensorData = pd.read_csv(r'Python\Data\thru2021July07StriderGas.csv')
 trialTimes = pd.read_csv(r'Python\Data\striderTrials.csv')
 
 # pickleJar import

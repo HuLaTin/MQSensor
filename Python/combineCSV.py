@@ -6,8 +6,8 @@
 
 import pandas as pd
 
-sensorData1 = pd.read_csv(r'Python\Data\thru2021June17StriderGas.csv', header = None)
-sensorData2 = pd.read_csv(r'Python\Data\20210622StriderGasStream.csv', header = None)
+sensorData1 = pd.read_csv(r'Python\Data\thru2021July02StriderGas.csv', header = None)
+sensorData2 = pd.read_csv(r'Python\Data\20210707StriderGasStream.csv', header = None)
 
 
 result1 = sensorData1.append([sensorData2], ignore_index=False)
@@ -19,4 +19,4 @@ result1 = sensorData1.append([sensorData2], ignore_index=False)
 
 result1 = result1.iloc[1:]
 
-result1.to_csv('thru2021June22StriderGas.csv', index = False)
+result1.to_csv('thru2021July07StriderGas.csv', index = False)

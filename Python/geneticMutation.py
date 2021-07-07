@@ -124,6 +124,6 @@ score = 0
 
 i = ("MQ2_ADC")
 
-# this is a recursive funtion
+# this is a recursive function
 getNeighbors(stat, bitMinValue, bitMaxValue, runbitMinValue, runbitMaxValue, futurebitMinValue, futurebitMaxValue, bits, expectedEvents, scaler, sRun, futureAvg, expectedChange, windowSize, sensorData,
             trialTimes, i, pd,  datetime, genCSV)

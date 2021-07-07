@@ -17,11 +17,11 @@ outputDir = (cwd, outputDir)
 outputDir = "\\".join(outputDir)
 
 # location of datafiles, readings and times of known experiments
-sensorData = pd.read_csv(r'Python\Data\thru2021June22StriderGas.csv')
+sensorData = pd.read_csv(r'Python\Data\thru2021July07StriderGas.csv')
 trialTimes = pd.read_csv(r'Python\Data\striderTrials.csv')
-events25 = pd.read_csv(r'Python\eventsOutput\events\2021Jun22_MQ2_0.1_5_20_Events.csv')
-events50 = pd.read_csv(r'Python\eventsOutput\events\2021Jun22_MQ2_0.1_5_45_Events.csv')
-events100 = pd.read_csv(r'Python\eventsOutput\events\2021Jun22_MQ2_0.1_5_95_Events.csv')
+events25 = pd.read_csv(r'Python\eventsOutput\events\2021Jul07_MQ2_0.1_5_20_Events.csv')
+events50 = pd.read_csv(r'Python\eventsOutput\events\2021Jul07_MQ2_0.1_5_45_Events.csv')
+events100 = pd.read_csv(r'Python\eventsOutput\events\2021Jul07_MQ2_0.1_5_95_Events.csv')
 
 
 
